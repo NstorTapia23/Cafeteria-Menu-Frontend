@@ -1,18 +1,19 @@
 "use client";
+
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/hooks/useAuthContext";
-import LoginForm from "@/components/LoginForm";
+import { useAuth } from "@/hooks/useAuth";
+import LoginForm from "./LoginForm";
 
-export default function Login() {
+export default function LoginPage() {
   const { isAuthenticated, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     if (isAuthenticated) {
-      router.push("admin/system");
+      console.log({ isAuthenticated, loading });
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, loading, router]);
 
   if (loading) {
     return (

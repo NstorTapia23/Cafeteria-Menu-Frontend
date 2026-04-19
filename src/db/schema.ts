@@ -39,7 +39,6 @@ export const elaborationAreas = pgEnum("elaboration_areas", [
   "lunch",
 ] as const);
 
-//logica de negocio
 export const workers = pgTable("workers", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   name: varchar("name", { length: 255 }).notNull().unique(),
@@ -60,7 +59,6 @@ export const orders = pgTable("orders", {
   workerId: integer("worker_id")
     .notNull()
     .references(() => workers.id),
-  name: varchar("name", { length: 255 }).notNull(),
   numberTable: integer("number_table").notNull(),
   status: orderStatus("status").notNull().default("open"),
   createdAt: timestamp("created_at", {
