@@ -41,7 +41,7 @@ export const elaborationAreas = pgEnum("elaboration_areas", [
 
 //logica de negocio
 export const workers = pgTable("workers", {
-  id: integer("id ").primaryKey().generatedAlwaysAsIdentity(),
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   name: varchar("name", { length: 255 }).notNull().unique(),
   password: varchar("password", { length: 255 }).notNull(),
   role: workerRole("worker_role").default("dependiente").notNull(),
@@ -79,7 +79,11 @@ export const prices = pgTable(
     itemId: integer("item_id")
       .notNull()
       .references(() => items.id),
-    amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
+    amount: numeric("amount", {
+      precision: 10,
+      scale: 2,
+      mode: "number",
+    }).notNull(),
     validTo: timestamp("valid_to", { withTimezone: true, mode: "date" }),
     validFrom: timestamp("valid_from", { withTimezone: true, mode: "date" })
       .defaultNow()

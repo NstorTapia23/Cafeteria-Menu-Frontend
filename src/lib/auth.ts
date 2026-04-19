@@ -1,35 +1,33 @@
-import { db } from "@/db";
-import { betterAuth } from "better-auth";
-import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { username } from "better-auth/plugins";
+import bcrypt from "bcryptjs";
+import { SignJWT, jwtVerify } from "jose";
 
-export const auth = betterAuth({
-  database: drizzleAdapter(db, {
-    provider: "pg",
-  }),
+const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
 
-  emailAndPassword: {
-    enabled: false,
-    requireEmailVerification: false,
-  },
+export async function hashPassword(password: string) {
+  return bcrypt.hash(password, 10);
+}
 
-  password: {
-    enabled: true,
-    minPasswordLength: 6,
-  },
+export async function comparePassword(password: string, hash: string) {
+  return bcrypt.compare(password, hash);
+}
 
-  plugins: [username()],
+export async function createSessionToken(payload: {
+  id: number;
+  name: string;
+  role: "dependiente" | "bartender" | "cocinero" | "admin" | "superadmin";
+}) {
+  return new SignJWT({
+    name: payload.name,
+    role: payload.role,
+  })
+    .setProtectedHeader({ alg: "HS256" })
+    .setSubject(String(payload.id))
+    .setIssuedAt()
+    .setExpirationTime("7d")
+    .sign(secret);
+}
 
-  user: {
-    additionalFields: {
-      role: {
-        type: "string",
-        defaultValue: "dependiente",
-      },
-      deletedAt: {
-        type: "date",
-        required: false,
-      },
-    },
-  },
-});
+export async function verifySessionToken(token: string) {
+  const { payload } = await jwtVerify(token, secret);
+  return payload;
+}
