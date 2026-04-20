@@ -10,7 +10,12 @@ export default function Home() {
     <div>
       <Image src="/favicon.ico" alt="Logo" width={120} height={120} priority />
       <button onClick={() => router.push("/admin")}>Ir a admin</button>
-      <button onClick={() => auth.logout()}>Cerrar sesión</button>
+      <button
+        className="flex justify-center rounded-xl shadow-md shadow-blue-200"
+        onClick={() => auth.logout()}
+      >
+        Cerrar sesión
+      </button>
     </div>
   );
 }

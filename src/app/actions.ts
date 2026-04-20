@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import {
   createItemSchema,
   type CreateItemSchema,
-} from "@/schemas/createItemSchema";
+} from "@/schemas/ItemsSchemas";
 import { createItemMenu } from "@/repositories/items";
 
 export async function createItem(values: CreateItemSchema) {

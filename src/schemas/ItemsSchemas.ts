@@ -1,0 +1,20 @@
+import z, { number } from "zod";
+
+export const createItemSchema = z.object({
+  name: z.string().min(1, "El nombre es requerido"),
+  description: z.string().min(1).optional(),
+  price: z.number().min(0, "El precio debe ser mayor o igual a 0"),
+  elaborationArea: z.enum(["cocina", "bar", "lunch"]),
+});
+
+export type CreateItemSchema = z.infer<typeof createItemSchema>;
+
+export const updateItemSchema = z.object({
+  id: number().int().positive(),
+  name: z.string().min(1).optional(),
+  description: z.string().min(1).optional(),
+  price: z.number().min(0).optional(),
+  elaborationArea: z.enum(["cocina", "bar", "lunch"]).optional(),
+});
+
+export type UpdateItemSchema = z.infer<typeof updateItemSchema>;

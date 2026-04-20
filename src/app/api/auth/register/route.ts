@@ -8,6 +8,7 @@ import { hashPassword, createSessionToken } from "@/lib/auth";
 const registerSchema = z.object({
   name: z.string().min(3).max(255),
   password: z.string().min(6).max(255),
+  role: z.enum(["dependiente", "bartender", "cocinero", "admin", "superadmin"]),
 });
 
 export async function POST(req: Request) {
@@ -19,7 +20,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
     }
 
-    const { name, password } = parsed.data;
+    const { name, password, role } = parsed.data;
 
     const existing = await db
       .select()
@@ -41,6 +42,7 @@ export async function POST(req: Request) {
       .values({
         name,
         password: hashedPassword,
+        role,
       })
       .returning({
         id: workers.id,

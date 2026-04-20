@@ -6,6 +6,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -30,6 +31,7 @@ interface AuthContextType {
   register: (
     name: string,
     password: string,
+    role: Role,
   ) => Promise<{ success: boolean; user?: User; error?: string }>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<{
@@ -59,6 +61,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const hasMounted = useRef(false);
 
   const isAuthenticated = Boolean(user);
 
@@ -98,26 +101,30 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Solo sincroniza el estado inicial del provider.
   useEffect(() => {
-    let cancelled = false;
+    if (!hasMounted.current) {
+      hasMounted.current = true;
 
-    const bootstrapAuth = async () => {
-      setLoading(true);
-      setError(null);
+      let cancelled = false;
 
-      const result = await checkAuth();
+      const bootstrapAuth = async () => {
+        setLoading(true);
+        setError(null);
 
-      if (cancelled) return;
+        const result = await checkAuth();
 
-      setUser(result.user);
-      setError(result.error ?? null);
-      setLoading(false);
-    };
+        if (cancelled) return;
 
-    void bootstrapAuth();
+        setUser(result.user);
+        setError(result.error ?? null);
+        setLoading(false);
+      };
 
-    return () => {
-      cancelled = true;
-    };
+      void bootstrapAuth();
+
+      return () => {
+        cancelled = true;
+      };
+    }
   }, [checkAuth]);
 
   const login = useCallback(async (name: string, password: string) => {
@@ -156,41 +163,44 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, []);
 
-  const register = useCallback(async (name: string, password: string) => {
-    setLoading(true);
-    setError(null);
+  const register = useCallback(
+    async (name: string, password: string, role: Role) => {
+      setLoading(true);
+      setError(null);
 
-    try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({ name, password }),
-      });
+      try {
+        const response = await fetch("/api/auth/register", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({ name, password, role }),
+        });
 
-      const data: AuthMutationResponse = await response.json();
+        const data: AuthMutationResponse = await response.json();
 
-      if (!response.ok || !data.worker?.id) {
-        const msg = data.error || "Error en registro";
+        if (!response.ok || !data.worker?.id) {
+          const msg = data.error || "Error en registro";
+          setUser(null);
+          setError(msg);
+          return { success: false, error: msg };
+        }
+
+        setUser(data.worker);
+        setError(null);
+        return { success: true, user: data.worker };
+      } catch {
+        const msg = "Error de conexión";
         setUser(null);
         setError(msg);
         return { success: false, error: msg };
+      } finally {
+        setLoading(false);
       }
-
-      setUser(data.worker);
-      setError(null);
-      return { success: true, user: data.worker };
-    } catch {
-      const msg = "Error de conexión";
-      setUser(null);
-      setError(msg);
-      return { success: false, error: msg };
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    },
+    [],
+  );
 
   const logout = useCallback(async () => {
     setLoading(true);

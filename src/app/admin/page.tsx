@@ -1,50 +1,13 @@
 "use client";
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/hooks/useAuthContext";
-import LoginForm from "@/components/LoginForm";
+
+import LoginPage from "@/components/LoginPage";
+import RegisterForm from "@/components/RegisterForm";
 
 export default function Login() {
-  const { isAuthenticated, loading } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      router.push("admin/system");
-    }
-  }, [isAuthenticated, router]);
-
-  if (loading) {
-    return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-          fontSize: "18px",
-        }}
-      >
-        Cargando...
-      </div>
-    );
-  }
-
-  if (isAuthenticated) {
-    return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-          fontSize: "18px",
-        }}
-      >
-        Redirigiendo...
-      </div>
-    );
-  }
-
-  return <LoginForm />;
+  return (
+    <div>
+      <LoginPage></LoginPage>
+      <RegisterForm></RegisterForm>
+    </div>
+  );
 }

@@ -1,9 +1,9 @@
 import { db } from "@/db";
-import { createItemSchema } from "@/schemas/createItemSchema";
+import { createItemSchema } from "@/schemas/ItemsSchemas";
 import z from "zod";
 import { items, prices } from "@/db/schema";
 import { eq, isNull, and } from "drizzle-orm";
-
+import type { UpdateItemSchema } from "@/schemas/ItemsSchemas";
 type ItemType = z.infer<typeof createItemSchema>;
 
 export async function createItemMenu(item: ItemType) {
@@ -51,4 +51,53 @@ export async function getAllItems() {
       prices,
       and(eq(items.id, prices.itemId), isNull(prices.validTo)),
     );
+}
+
+export async function updateItem(itemUpdate: UpdateItemSchema) {
+  return await db.transaction(async (tx) => {
+    // 1. Verificar existencia del ítem
+    const existingItem = await tx.query.items.findFirst({
+      where: eq(items.id, itemUpdate.id),
+    });
+
+    if (!existingItem) {
+      throw new Error(`El ítem con id ${itemUpdate.id} no existe`);
+    }
+
+    // 2. Actualizar campos básicos (los undefined son ignorados por Drizzle)
+    const [updatedItem] = await tx
+      .update(items)
+      .set({
+        name: itemUpdate.name,
+        description: itemUpdate.description,
+        elaborationArea: itemUpdate.elaborationArea,
+      })
+      .where(eq(items.id, itemUpdate.id))
+      .returning();
+
+    // 3. Manejar precio si se proporcionó
+    if (itemUpdate.price !== undefined) {
+      // Expirar el precio activo actual
+      await tx
+        .update(prices)
+        .set({ validTo: new Date() })
+        .where(and(eq(prices.itemId, itemUpdate.id), isNull(prices.validTo)));
+
+      // Insertar el nuevo precio como activo
+      await tx.insert(prices).values({
+        itemId: itemUpdate.id,
+        amount: itemUpdate.price,
+        validFrom: new Date(),
+      });
+    }
+
+    const activePrice = await tx.query.prices.findFirst({
+      where: and(eq(prices.itemId, itemUpdate.id), isNull(prices.validTo)),
+    });
+
+    return {
+      ...updatedItem,
+      activePrice: activePrice,
+    };
+  });
 }
