@@ -58,7 +58,6 @@ export default function RegisterForm() {
     isAuthenticated,
   } = useAuth();
 
-  // Marcar como montado en cliente – seguro para hidratación
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);

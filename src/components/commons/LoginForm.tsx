@@ -20,35 +20,19 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
-
-const loginSchema = z.object({
-  name: z
-    .string()
-    .min(3, "El nombre debe tener al menos 3 caracteres")
-    .max(255, "El nombre no puede exceder 255 caracteres"),
-  password: z
-    .string()
-    .min(6, "La contraseña debe tener al menos 6 caracteres")
-    .max(255, "La contraseña no puede exceder 255 caracteres"),
-});
+import { loginSchema } from "@/schemas/loginSchema";
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginForm() {
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
-  const { login, loading, error, clearError, isAuthenticated } = useAuth();
+  const { login, loading, error, clearError } = useAuth();
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
-
-  useEffect(() => {
-    if (mounted && isAuthenticated) {
-      router.push("/admin/system");
-    }
-  }, [mounted, isAuthenticated, router]);
 
   const {
     control,
