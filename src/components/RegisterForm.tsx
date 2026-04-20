@@ -3,7 +3,11 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { useAuth } from "@/hooks/useAuthContext";
+import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -15,149 +19,251 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
 
-type Role = "dependiente" | "bartender" | "cocinero" | "admin" | "superadmin";
+const registerSchema = z
+  .object({
+    name: z
+      .string()
+      .min(3, "El nombre debe tener al menos 3 caracteres")
+      .max(255, "El nombre no puede exceder 255 caracteres"),
+    password: z
+      .string()
+      .min(6, "La contraseña debe tener al menos 6 caracteres")
+      .max(255, "La contraseña no puede exceder 255 caracteres"),
+    confirmPassword: z.string(),
+    role: z.enum([
+      "dependiente",
+      "bartender",
+      "cocinero",
+      "admin",
+      "superadmin",
+    ]),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Las contraseñas no coinciden",
+    path: ["confirmPassword"],
+  });
+
+type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function RegisterForm() {
-  const [name, setName] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [role, setRole] = useState<Role>("dependiente");
-  const [passwordError, setPasswordError] = useState("");
-
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
-  const { register, loading, error, clearError, isAuthenticated } = useAuth();
+  const {
+    register: registerUser,
+    loading,
+    error,
+    clearError,
+    isAuthenticated,
+  } = useAuth();
+
+  // Marcar como montado en cliente – seguro para hidratación
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (mounted && isAuthenticated) {
       router.push("/admin/system");
     }
-  }, [isAuthenticated, router]);
+  }, [mounted, isAuthenticated, router]);
 
-  const validatePasswords = () => {
-    if (password.length < 6) {
-      setPasswordError("La contraseña debe tener al menos 6 caracteres");
-      return false;
-    }
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      name: "",
+      password: "",
+      confirmPassword: "",
+      role: "dependiente",
+    },
+  });
 
-    if (password !== confirmPassword) {
-      setPasswordError("Las contraseñas no coinciden");
-      return false;
-    }
-
-    setPasswordError("");
-    return true;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (data: RegisterFormValues) => {
     clearError();
-    setPasswordError("");
-
-    if (!validatePasswords()) return;
-
-    const result = await register(name, password, role);
-
+    const result = await registerUser(data.name, data.password, data.role);
     if (result.success) {
       router.push("/admin/system");
     }
   };
 
+  const inputClassName = cn(
+    "h-12 rounded-xl border-slate-200 bg-slate-50/80 px-4 text-base shadow-inner",
+    "placeholder:text-slate-400",
+    "transition-all duration-200",
+    "hover:border-slate-300",
+    "focus:border-slate-900 focus:bg-white focus:shadow-md focus:ring-4 focus:ring-slate-900/5",
+  );
+
+  if (!mounted) {
+    return (
+      <div className="relative min-h-screen flex items-center justify-center overflow-hidden px-4 sm:px-6 lg:px-8 bg-linear-to-br from-slate-100 via-slate-50 to-white">
+        <Card className="relative w-full max-w-md border-0 shadow-2xl shadow-slate-300/50 rounded-3xl backdrop-blur-sm bg-white/95">
+          <CardContent className="flex items-center justify-center py-20">
+            <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-slate-100 px-4">
-      <Card className="w-full max-w-md border-slate-200 shadow-xl rounded-2xl">
-        <CardHeader className="space-y-2 text-center pt-8">
-          <CardTitle className="text-3xl font-bold text-slate-900">
+    <div
+      className={cn(
+        "relative min-h-screen flex items-center justify-center overflow-hidden px-4 sm:px-6 lg:px-8",
+        "bg-linear-to-br from-slate-100 via-slate-50 to-white",
+      )}
+    >
+      <Card
+        className={cn(
+          "relative w-full max-w-md border-0 shadow-2xl shadow-slate-300/50 rounded-3xl",
+          "backdrop-blur-sm bg-white/95",
+          "transition-all duration-300",
+        )}
+      >
+        <CardHeader className={cn("space-y-3 text-center pt-10 pb-2")}>
+          <CardTitle
+            className={cn("text-4xl font-bold tracking-tight text-slate-900")}
+          >
             Crear cuenta
           </CardTitle>
-          <CardDescription className="text-slate-500">
+          <CardDescription className={cn("text-base text-slate-500")}>
             Completa los datos para registrarte
           </CardDescription>
         </CardHeader>
 
-        <CardContent className="pb-8">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="name" className="text-slate-700">
+        <CardContent className={cn("px-8 pb-10")}>
+          <form onSubmit={handleSubmit(onSubmit)} className={cn("space-y-6")}>
+            <div className={cn("space-y-2")}>
+              <Label
+                htmlFor="name"
+                className={cn("text-sm font-medium text-slate-700")}
+              >
                 Nombre de usuario
               </Label>
               <Input
                 id="name"
                 type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                minLength={3}
-                maxLength={255}
-                placeholder="Ingresa tu nombre de usuario"
-                className="h-11 rounded-xl border-slate-300 bg-white focus-visible:ring-slate-900"
+                placeholder="ej. juanperez"
+                className={inputClassName}
+                {...register("name")}
               />
+              {errors.name && (
+                <p className="text-sm text-red-600 animate-in slide-in-from-top-1 fade-in-0">
+                  {errors.name.message}
+                </p>
+              )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-slate-700">
+            <div className={cn("space-y-2")}>
+              <Label
+                htmlFor="password"
+                className={cn("text-sm font-medium text-slate-700")}
+              >
                 Contraseña
               </Label>
               <Input
                 id="password"
                 type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-                maxLength={255}
-                placeholder="Ingresa tu contraseña"
-                className="h-11 rounded-xl border-slate-300 bg-white focus-visible:ring-slate-900"
+                placeholder="••••••••"
+                className={inputClassName}
+                {...register("password")}
               />
+              {errors.password && (
+                <p className="text-sm text-red-600 animate-in slide-in-from-top-1 fade-in-0">
+                  {errors.password.message}
+                </p>
+              )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword" className="text-slate-700">
+            <div className={cn("space-y-2")}>
+              <Label
+                htmlFor="confirmPassword"
+                className={cn("text-sm font-medium text-slate-700")}
+              >
                 Confirmar contraseña
               </Label>
               <Input
                 id="confirmPassword"
                 type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                minLength={6}
-                maxLength={255}
-                placeholder="Confirma tu contraseña"
-                className="h-11 rounded-xl border-slate-300 bg-white focus-visible:ring-slate-900"
+                placeholder="••••••••"
+                className={inputClassName}
+                {...register("confirmPassword")}
               />
+              {errors.confirmPassword && (
+                <p className="text-sm text-red-600 animate-in slide-in-from-top-1 fade-in-0">
+                  {errors.confirmPassword.message}
+                </p>
+              )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="role" className="text-slate-700">
+            <div className={cn("space-y-2")}>
+              <Label
+                htmlFor="role"
+                className={cn("text-sm font-medium text-slate-700")}
+              >
                 Rol
               </Label>
               <select
                 id="role"
-                value={role}
-                onChange={(e) => setRole(e.target.value as Role)}
-                className="h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-slate-900"
+                className={cn(
+                  inputClassName,
+                  "appearance-none bg-no-repeat bg-right pr-10",
+                  "bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cG9seWxpbmUgcG9pbnRzPSI2IDkgMTIgMTUgMTggOSI+PC9wb2x5bGluZT48L3N2Zz4=')]",
+                )}
+                {...register("role")}
               >
                 <option value="dependiente">Dependiente</option>
                 <option value="bartender">Bartender</option>
                 <option value="cocinero">Cocinero</option>
-                <option value="admin">Admin</option>
-                <option value="superadmin">Super Admin</option>
+                <option value="admin">Administrador</option>
+                <option value="superadmin">Super Administrador</option>
               </select>
+              {errors.role && (
+                <p className="text-sm text-red-600 animate-in slide-in-from-top-1 fade-in-0">
+                  {errors.role.message}
+                </p>
+              )}
             </div>
 
-            {(error || passwordError) && (
-              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                {error || passwordError}
+            {error && (
+              <div
+                className={cn(
+                  "animate-in slide-in-from-top-2 fade-in-0 duration-300",
+                  "rounded-xl border border-red-100 bg-red-50/90 px-4 py-3",
+                  "text-sm font-medium text-red-700 shadow-sm backdrop-blur-sm",
+                )}
+              >
+                {error}
               </div>
             )}
 
             <Button
               type="submit"
               disabled={loading}
-              className="h-11 w-full rounded-xl bg-slate-900 text-white hover:bg-slate-800"
+              className={cn(
+                "relative h-12 w-full rounded-xl text-base font-medium text-white",
+                "bg-linear-to-r from-slate-800 to-slate-900",
+                "shadow-lg shadow-slate-400/30",
+                "transition-all duration-300",
+                "hover:from-slate-900 hover:to-black hover:shadow-slate-500/40",
+                "focus-visible:ring-4 focus-visible:ring-slate-400",
+                "disabled:cursor-not-allowed disabled:opacity-70",
+              )}
             >
-              {loading ? "Procesando..." : "Registrarse"}
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Creando cuenta...
+                </span>
+              ) : (
+                "Registrarse"
+              )}
             </Button>
           </form>
         </CardContent>
