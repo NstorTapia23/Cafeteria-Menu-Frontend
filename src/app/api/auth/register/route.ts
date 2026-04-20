@@ -4,11 +4,12 @@ import { db } from "@/db";
 import { workers } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { hashPassword, createSessionToken } from "@/lib/auth";
+import { UserRole } from "@/types/roles";
 
 const registerSchema = z.object({
   name: z.string().min(3).max(255),
   password: z.string().min(6).max(255),
-  role: z.enum(["dependiente", "bartender", "cocinero", "admin", "superadmin"]),
+  role: z.nativeEnum(UserRole),
 });
 
 export async function POST(req: Request) {
@@ -54,7 +55,7 @@ export async function POST(req: Request) {
     const token = await createSessionToken({
       id: worker.id,
       name: worker.name,
-      role: worker.role,
+      role: worker.role as UserRole,
     });
 
     const response = NextResponse.json(

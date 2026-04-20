@@ -1,9 +1,21 @@
 "use client";
-import { useAuth } from "@/hooks/useAuth";
-import LoginForm from "./commons/LoginForm";
+
+import { useAuthContext } from "@/contexts/AuthContext";
+import LoginForm from "@/components/commons/LoginForm";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function LoginPage() {
-  const { isAuthenticated, loading } = useAuth();
+  const router = useRouter();
+  const auth = useAuthContext();
+  const { isAuthenticated, loading } = auth;
+
+  // Redirige cuando el usuario ya está autenticado
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push("admin/system");
+    }
+  }, [isAuthenticated, router]);
 
   if (loading) {
     return (
@@ -21,21 +33,6 @@ export default function LoginPage() {
     );
   }
 
-  if (isAuthenticated) {
-    return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-          fontSize: "18px",
-        }}
-      >
-        Redirigiendo...
-      </div>
-    );
-  }
-
+  // Si no está autenticado y ya terminó de cargar, muestra el formulario
   return <LoginForm />;
 }

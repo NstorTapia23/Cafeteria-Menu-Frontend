@@ -10,15 +10,15 @@ import {
   boolean,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { UserRole } from "@/types/roles";
 
-//enums
+//enums usando el enum global
 export const workerRole = pgEnum("worker_role", [
-  "dependiente",
-  "bartender",
-  "cocinero",
-  "admin",
-  "superadmin",
-] as const);
+  UserRole.DEPENDIENTE as string,
+  UserRole.BARTENDER as string,
+  UserRole.COCINERO as string,
+  UserRole.ADMIN as string,
+]);
 
 export const orderStatus = pgEnum("order_status", [
   "open",

@@ -1,9 +1,6 @@
+import AppLayout from "@/components/commons/appLayout";
 import type { ReactNode } from "react";
 
-export default function AdminLayout({ children }: { children: ReactNode }) {
-  return (
-    <div className="min-h-screen flex">
-      <main className="flex-1 p-4">{children}</main>
-    </div>
-  );
+export default function WorkspaceLayout({ children }: { children: ReactNode }) {
+  return <AppLayout>{children}</AppLayout>;
 }

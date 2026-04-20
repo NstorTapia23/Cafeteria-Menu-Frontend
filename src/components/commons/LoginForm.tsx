@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useAuth } from "@/hooks/useAuthContext";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,8 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 export default function LoginForm() {
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
-  const { login, loading, error, clearError } = useAuth();
+  const auth = useAuthContext();
+  const { login, loading, error, clearError } = auth;
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect

@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { useAuthContext } from '@/contexts/AuthContext';
+import { useAuthContext } from "@/contexts/AuthContext";
 
 // Hook simplificado que usa el Context de autenticación
 export function useAuth() {
   const context = useAuthContext();
-  
+
   return {
     user: context.user,
     loading: context.loading,

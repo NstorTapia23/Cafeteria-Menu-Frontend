@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import { SignJWT, jwtVerify } from "jose";
+import { UserRole } from "@/types/roles";
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
 
@@ -14,7 +15,7 @@ export async function comparePassword(password: string, hash: string) {
 export async function createSessionToken(payload: {
   id: number;
   name: string;
-  role: "dependiente" | "bartender" | "cocinero" | "admin" | "superadmin";
+  role: UserRole;
 }) {
   return new SignJWT({
     name: payload.name,

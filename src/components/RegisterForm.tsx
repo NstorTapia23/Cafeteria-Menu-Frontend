@@ -6,8 +6,9 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useAuth } from "@/hooks/useAuthContext";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
+import { UserRole, ROLE_OPTIONS } from "@/types/roles";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -20,54 +21,19 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
-
-const registerSchema = z
-  .object({
-    name: z
-      .string()
-      .min(3, "El nombre debe tener al menos 3 caracteres")
-      .max(255, "El nombre no puede exceder 255 caracteres"),
-    password: z
-      .string()
-      .min(6, "La contraseña debe tener al menos 6 caracteres")
-      .max(255, "La contraseña no puede exceder 255 caracteres"),
-    confirmPassword: z.string(),
-    role: z.enum([
-      "dependiente",
-      "bartender",
-      "cocinero",
-      "admin",
-      "superadmin",
-    ]),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Las contraseñas no coinciden",
-    path: ["confirmPassword"],
-  });
-
+import { registerSchema } from "@/schemas/registerSchema";
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function RegisterForm() {
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
-  const {
-    register: registerUser,
-    loading,
-    error,
-    clearError,
-    isAuthenticated,
-  } = useAuth();
+  const auth = useAuthContext();
+  const { register: registerUser, loading, error, clearError } = auth;
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
-
-  useEffect(() => {
-    if (mounted && isAuthenticated) {
-      router.push("/admin/system");
-    }
-  }, [mounted, isAuthenticated, router]);
 
   const {
     register,
@@ -79,7 +45,7 @@ export default function RegisterForm() {
       name: "",
       password: "",
       confirmPassword: "",
-      role: "dependiente",
+      role: UserRole.DEPENDIENTE,
     },
   });
 
@@ -129,10 +95,10 @@ export default function RegisterForm() {
           <CardTitle
             className={cn("text-4xl font-bold tracking-tight text-slate-900")}
           >
-            Crear cuenta
+            Crear trabajador
           </CardTitle>
           <CardDescription className={cn("text-base text-slate-500")}>
-            Completa los datos para registrarte
+            Completa los datos para registrar al trabajador
           </CardDescription>
         </CardHeader>
 
@@ -143,7 +109,7 @@ export default function RegisterForm() {
                 htmlFor="name"
                 className={cn("text-sm font-medium text-slate-700")}
               >
-                Nombre de usuario
+                Nombre del trabajador
               </Label>
               <Input
                 id="name"
@@ -217,11 +183,11 @@ export default function RegisterForm() {
                 )}
                 {...register("role")}
               >
-                <option value="dependiente">Dependiente</option>
-                <option value="bartender">Bartender</option>
-                <option value="cocinero">Cocinero</option>
-                <option value="admin">Administrador</option>
-                <option value="superadmin">Super Administrador</option>
+                {ROLE_OPTIONS.map((role) => (
+                  <option key={role.value} value={role.value}>
+                    {role.label}
+                  </option>
+                ))}
               </select>
               {errors.role && (
                 <p className="text-sm text-red-600 animate-in slide-in-from-top-1 fade-in-0">
@@ -258,7 +224,7 @@ export default function RegisterForm() {
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
                   <Loader2 className="h-5 w-5 animate-spin" />
-                  Creando cuenta...
+                  Generando Trabajador...
                 </span>
               ) : (
                 "Registrarse"

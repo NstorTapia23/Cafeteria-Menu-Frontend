@@ -6,12 +6,12 @@ import {
   useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState,
   type ReactNode,
 } from "react";
+import { UserRole } from "@/types/roles";
 
-type Role = "dependiente" | "bartender" | "cocinero" | "admin" | "superadmin";
+type Role = UserRole;
 
 export interface User {
   id: string;
@@ -61,7 +61,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const hasMounted = useRef(false);
 
   const isAuthenticated = Boolean(user);
 
@@ -81,11 +80,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return data.user;
   }, []);
 
-  // Solo consulta y devuelve datos. No modifica estado.
   const checkAuth = useCallback(async () => {
     try {
       const currentUser = await fetchCurrentUser();
-
       return {
         success: Boolean(currentUser),
         user: currentUser,
@@ -99,32 +96,37 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [fetchCurrentUser]);
 
-  // Solo sincroniza el estado inicial del provider.
+  // Inicialización: solo se ejecuta una vez al montar el provider
   useEffect(() => {
-    if (!hasMounted.current) {
-      hasMounted.current = true;
+    let cancelled = false;
 
-      let cancelled = false;
+    const bootstrapAuth = async () => {
+      setLoading(true);
+      setError(null);
 
-      const bootstrapAuth = async () => {
-        setLoading(true);
-        setError(null);
-
+      try {
         const result = await checkAuth();
+        if (!cancelled) {
+          setUser(result.user);
+          setError(result.error ?? null);
+        }
+      } catch {
+        if (!cancelled) {
+          setUser(null);
+          setError("Error inesperado al verificar autenticación");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
 
-        if (cancelled) return;
+    bootstrapAuth();
 
-        setUser(result.user);
-        setError(result.error ?? null);
-        setLoading(false);
-      };
-
-      void bootstrapAuth();
-
-      return () => {
-        cancelled = true;
-      };
-    }
+    return () => {
+      cancelled = true;
+    };
   }, [checkAuth]);
 
   const login = useCallback(async (name: string, password: string) => {
@@ -254,10 +256,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
 export function useAuthContext() {
   const context = useContext(AuthContext);
-
   if (!context) {
     throw new Error("useAuthContext debe usarse dentro de AuthProvider");
   }
-
   return context;
 }

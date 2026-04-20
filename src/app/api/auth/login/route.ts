@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { workers } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { comparePassword, createSessionToken } from "@/lib/auth";
+import { UserRole } from "@/types/roles";
 
 const loginSchema = z.object({
   name: z.string().min(3).max(255),
@@ -47,7 +48,7 @@ export async function POST(req: Request) {
     const token = await createSessionToken({
       id: worker.id,
       name: worker.name,
-      role: worker.role,
+      role: worker.role as UserRole,
     });
 
     const response = NextResponse.json(
