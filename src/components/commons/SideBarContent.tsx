@@ -31,19 +31,19 @@ interface NavItem {
 const allNavItems: NavItem[] = [
   {
     title: "Dashboard",
-    href: "/admin/dashboard",
+    href: "/admin/workspace/dashboard",
     icon: LayoutDashboard,
     roles: ["admin", "superadmin"],
   },
   {
     title: "Pedidos",
-    href: "/admin/orders",
+    href: "/admin/workspace/orders",
     icon: Package,
     roles: ["dependiente", "admin", "superadmin"],
   },
   {
     title: "Sistema",
-    href: "/admin/system",
+    href: "/admin/workspace/system",
     icon: Settings,
     roles: ["cocinero", "bartender", "admin", "superadmin"],
   },

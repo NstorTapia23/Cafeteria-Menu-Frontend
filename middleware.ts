@@ -22,26 +22,25 @@ async function verifyToken(token: string): Promise<TokenPayload> {
 
 // 🔐 Definición de permisos por prefijo de ruta (solo para rutas protegidas)
 const routePermissions: Record<string, string[]> = {
-  "/admin/dashboard": ["admin"],
-  "/admin/system": ["cocinero", "bartender", "admin"],
-  "/admin/orders": ["dependiente", "admin"],
+  "/admin/workspace/dashboard": ["admin"],
+  "/admin/workspace/system": ["cocinero", "bartender", "admin"],
+  "/admin/workspace/orders": ["dependiente", "admin"],
   // Puedes agregar más rutas protegidas aquí, por ejemplo:
   // "/admin/reports": ["admin"],
   // "/admin/profile": ["admin", "dependiente", "cocinero", "bartender"], // todos
 };
 
-// 🧭 Redirección por defecto según el rol (usuario logueado)
 function getDefaultRedirectForRole(role: string): string {
   switch (role) {
     case "dependiente":
-      return "/admin/orders";
+      return "/admin/workspace/orders";
     case "cocinero":
     case "bartender":
-      return "/admin/system";
+      return "/admin/workspace/system";
     case "admin":
-      return "/admin/dashboard";
+      return "/admin/workspace/dashboard";
     default:
-      return "/login";
+      return "/admin";
   }
 }
 
@@ -70,12 +69,7 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // 📌 Rutas públicas (sin autenticación)
-  const publicPaths = [
-    "/login",
-    "/register",
-    "/api/auth/login",
-    "/api/auth/register",
-  ];
+  const publicPaths = ["/api/auth/login", "/api/auth/register"];
   const isPublic = publicPaths.some((path) => pathname.startsWith(path));
 
   if (isPublic) {
@@ -113,7 +107,7 @@ export async function middleware(req: NextRequest) {
 
     // 5️⃣ Acceso permitido
     return NextResponse.next();
-  } catch (error) {
+  } catch {
     // Token inválido o expirado
     const response = NextResponse.redirect(new URL("/login", req.url));
     response.cookies.delete("session");

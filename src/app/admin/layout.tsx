@@ -1,6 +1,5 @@
-import AppLayout from "@/components/commons/appLayout";
 import type { ReactNode } from "react";
 
-export default function WorkspaceLayout({ children }: { children: ReactNode }) {
-  return <AppLayout>{children}</AppLayout>;
+export default function AdminLayout({ children }: { children: ReactNode }) {
+  return <div>{children}</div>;
 }

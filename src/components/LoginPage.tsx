@@ -13,7 +13,7 @@ export default function LoginPage() {
   // Redirige cuando el usuario ya está autenticado
   useEffect(() => {
     if (isAuthenticated) {
-      router.push("admin/system");
+      router.push("admin/workspace/system");
     }
   }, [isAuthenticated, router]);
 
