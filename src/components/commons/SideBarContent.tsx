@@ -119,27 +119,21 @@ export function SidebarContent({
     <div className="flex h-full flex-col">
       {/* Logo / Brand */}
       <div className="flex h-16 items-center border-b border-stone-200 px-4">
-        <Link
-          href="/admin/dashboard"
-          className="flex items-center gap-3"
-          onClick={onNavigate}
-        >
-          <div className="relative h-12 w-12 shrink-0">
-            <Image
-              src="/Favicon.webp"
-              alt="Hotel Santiago Habana"
-              fill
-              sizes="48px"
-              className="object-contain"
-              priority
-              placeholder="blur"
-              blurDataURL="data:image/webp;base64,..."
-            />
-          </div>
-          <span className="text-lg md:text-xl font-semibold text-stone-800">
-            Hotel Santiago Habana
-          </span>
-        </Link>
+        <div className="relative h-12 w-12 shrink-0">
+          <Image
+            src="/Favicon.webp"
+            alt="Hotel Santiago Habana"
+            fill
+            sizes="48px"
+            className="object-contain"
+            priority
+            placeholder="blur"
+            blurDataURL="data:image/webp;base64,..."
+          />
+        </div>
+        <span className="text-lg md:text-xl font-semibold text-stone-800">
+          Hotel Santiago Habana
+        </span>
       </div>
 
       {/* Navegación */}
