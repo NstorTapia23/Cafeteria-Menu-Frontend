@@ -1,4 +1,15 @@
+"use client";
+
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 type OrderType = "orden" | "pendiente";
 
@@ -10,7 +21,6 @@ interface BaseOrder {
 interface Order extends BaseOrder {
   status: "open" | "closed" | "canceled";
   workerName: string;
-  items?: string[]; // Opcional hasta que se implemente
 }
 
 interface PendingProduct extends BaseOrder {
@@ -26,61 +36,76 @@ interface OrdersCardProps {
 }
 
 export function OrdersCard({ data, type }: OrdersCardProps) {
+  const router = useRouter();
+
+  const handleCardClick = () => {
+    if (type === "orden") {
+      const orden = data as Order;
+      router.push(`/admin/workspace/orders/${orden.id}`);
+    }
+  };
   if (type === "orden") {
     const orden = data as Order;
+
+    const statusClasses: Record<Order["status"], string> = {
+      open: "bg-yellow-100 text-yellow-800",
+      closed: "bg-green-100 text-green-800",
+      canceled: "bg-red-100 text-red-800",
+    };
+
+    const statusText: Record<Order["status"], string> = {
+      open: "Abierta",
+      closed: "Cerrada",
+      canceled: "Cancelada",
+    };
+
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow">
-        <div className="flex justify-between items-center mb-2">
-          <h3 className="font-semibold text-lg">Mesa {orden.numberTable}</h3>
-          <span className="text-sm text-gray-500">#{orden.id}</span>
-        </div>
+      <Card
+        className="shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+        onClick={handleCardClick}
+      >
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">Mesa {orden.numberTable}</CardTitle>
+            <CardDescription>#{orden.id}</CardDescription>
+          </div>
+          <CardDescription className="flex items-center gap-1 pt-1">
+            👤 {orden.workerName}
+          </CardDescription>
+        </CardHeader>
 
-        {/* Nombre del trabajador */}
-        <p className="text-sm text-gray-600 mb-2">👤 {orden.workerName}</p>
-
-        {/* Ítems (placeholder) */}
-        {orden.items && orden.items.length > 0 ? (
-          <ul className="list-disc list-inside text-gray-700 mb-3">
-            {orden.items.map((item, idx) => (
-              <li key={idx}>{item}</li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-gray-400 text-sm mb-3">Sin detalles de ítems</p>
-        )}
-
-        {/* Estado */}
-        <div className="flex justify-end">
+        <CardFooter className="justify-end pt-0">
           <span
             className={cn(
-              "text-xs px-2 py-1 rounded-full",
-              orden.status === "open" && "bg-yellow-100 text-yellow-800",
-              orden.status === "closed" && "bg-green-100 text-green-800",
-              orden.status === "canceled" && "bg-red-100 text-red-800",
+              "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
+              statusClasses[orden.status],
             )}
           >
-            {orden.status === "open" && "Abierta"}
-            {orden.status === "closed" && "Cerrada"}
-            {orden.status === "canceled" && "Cancelada"}
+            {statusText[orden.status]}
           </span>
-        </div>
-      </div>
+        </CardFooter>
+      </Card>
     );
   }
 
-  // Renderizado para pendientes (sin cambios)
+  // Renderizado para pendientes
   const pendiente = data as PendingProduct;
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm flex items-center justify-between">
-      <div>
-        <p className="font-medium text-gray-900">{pendiente.producto}</p>
-        <p className="text-sm text-gray-500">
-          Mesa {pendiente.numberTable} · Cantidad: {pendiente.cantidad}
-        </p>
-      </div>
-      <span className="text-sm bg-orange-100 text-orange-800 px-3 py-1 rounded-full">
-        Listo para entregar
-      </span>
-    </div>
+    <Card
+      className="shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+      onClick={handleCardClick}
+    >
+      <CardContent className="flex items-center justify-between p-4">
+        <div className="space-y-1">
+          <p className="font-medium">{pendiente.producto}</p>
+          <p className="text-sm text-muted-foreground">
+            Mesa {pendiente.numberTable} · Cantidad: {pendiente.cantidad}
+          </p>
+        </div>
+        <span className="inline-flex items-center rounded-full bg-orange-100 px-3 py-1 text-sm font-medium text-orange-800">
+          Listo para entregar
+        </span>
+      </CardContent>
+    </Card>
   );
 }

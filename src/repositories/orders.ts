@@ -45,7 +45,6 @@ export async function CreateNewOrder(
     } else if (typeof error === "string") {
       message = error;
     }
-    // Opcional: loguear error original
     throw new Error(`Error al crear la orden: ${message}`);
   }
 }

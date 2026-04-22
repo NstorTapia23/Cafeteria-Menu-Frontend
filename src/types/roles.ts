@@ -32,17 +32,11 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   [UserRole.ADMIN]: "Administrador",
 };
 
-/**
- * Opciones para selectores de formulario
- */
 export const ROLE_OPTIONS = AVAILABLE_ROLES.map((role) => ({
   value: role,
   label: ROLE_LABELS[role],
 }));
 
-/**
- * Utilidades para validación de roles
- */
 export const RoleUtils = {
   /**
    * Verifica si un rol es válido

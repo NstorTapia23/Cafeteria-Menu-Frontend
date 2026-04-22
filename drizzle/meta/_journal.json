@@ -22,6 +22,13 @@
       "when": 1776615711303,
       "tag": "0002_careless_polaris",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1776883473647,
+      "tag": "0003_right_sersi",
+      "breakpoints": true
     }
   ]
 }

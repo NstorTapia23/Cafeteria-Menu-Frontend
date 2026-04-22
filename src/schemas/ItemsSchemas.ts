@@ -18,3 +18,9 @@ export const updateItemSchema = z.object({
 });
 
 export type UpdateItemSchema = z.infer<typeof updateItemSchema>;
+
+export const getItemsForOrderItems = z.object({
+  id: z.number().int().positive(),
+  name: z.string(),
+  price: z.coerce.number(),
+});

@@ -55,7 +55,6 @@ export async function getAllItems() {
 
 export async function updateItem(itemUpdate: UpdateItemSchema) {
   return await db.transaction(async (tx) => {
-    // 1. Verificar existencia del ítem
     const existingItem = await tx.query.items.findFirst({
       where: eq(items.id, itemUpdate.id),
     });
@@ -64,7 +63,6 @@ export async function updateItem(itemUpdate: UpdateItemSchema) {
       throw new Error(`El ítem con id ${itemUpdate.id} no existe`);
     }
 
-    // 2. Actualizar campos básicos (los undefined son ignorados por Drizzle)
     const [updatedItem] = await tx
       .update(items)
       .set({
