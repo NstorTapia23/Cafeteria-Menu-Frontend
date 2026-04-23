@@ -1,35 +1,30 @@
-import { and, eq, gte, isNull, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { db } from "@/db/index"; // tu conexión a la BD
-import { orderItems, items, prices, orders } from "@/db/schema"; // tus definiciones de tablas
+import { orderItems, items, prices } from "@/db/schema"; // tus definiciones de tablas
 import z from "zod";
 import {
   createOrderItemSchema,
   updateOrderItemQuantitySchema,
   updateOrderItemStatusSchema,
 } from "@/schemas/orderItemsSchemas";
-
 export async function getOrderItemsByOrderId(orderID: number) {
   const result = await db
     .select({
       id: orderItems.id,
-      orderID: orderItems.orderId,
+      orderId: orderItems.orderId,
       itemId: orderItems.itemId,
       name: items.name,
       cantidad: orderItems.quantity,
       status: orderItems.status,
-      totalAmount: sql<number>`${prices.amount} * ${orderItems.quantity}`,
+      totalAmount: sql<number>`CAST(${prices.amount} * ${orderItems.quantity} AS FLOAT)`,
     })
     .from(orderItems)
     .innerJoin(items, eq(orderItems.itemId, items.id))
-    .innerJoin(orders, eq(orderItems.orderId, orders.id))
     .innerJoin(prices, eq(orderItems.itemId, prices.itemId))
     .where(
       and(
         eq(orderItems.orderId, orderID),
-        // La fecha de la orden debe ser posterior o igual al inicio de vigencia del precio
-        gte(orders.createdAt, prices.validFrom),
-        // Y debe ser anterior a la fecha de fin de vigencia, o ésta ser NULL (precio actual)
-        sql`(${prices.validTo} IS NULL OR ${orders.createdAt} < ${prices.validTo})`,
+        isNull(prices.validTo), // Solo el precio actual activo
       ),
     );
   return result;

@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -24,7 +25,6 @@ import {
   updateStatus,
   addItem,
 } from "@/app/admin/workspace/orders/[id]/actions";
-import { useRouter } from "next/navigation";
 
 interface MenuItem {
   id: number;
@@ -41,7 +41,6 @@ export default function OrderDetailClient({
   initialItems: OrderItem[];
   menuItems: MenuItem[];
 }) {
-  const router = useRouter();
   const [items, setItems] = useState<OrderItem[]>(initialItems);
   const [selectedMenuItemId, setSelectedMenuItemId] = useState<string>(
     menuItems[0]?.id.toString() ?? "",
@@ -67,23 +66,23 @@ export default function OrderDetailClient({
   const closeQuantityEditor = () => setEditingItemId(null);
 
   const incrementDraft = () => setDraftQuantity((prev) => prev + 1);
-  const decrementDraft = () =>
-    setDraftQuantity((prev) => Math.max(1, prev - 1));
 
-  const acceptQuantityChange = (itemId: number, delta: number) => {
+  const decrementDraft = () =>
+    setDraftQuantity((prev) => Math.max(0, prev - 1));
+  const acceptQuantityChange = (itemId: number, newQuantity: number) => {
+    const currentItem = items.find((i) => i.id === itemId);
+    if (!currentItem) return;
+    const delta = newQuantity - currentItem.cantidad;
     if (delta === 0) {
       closeQuantityEditor();
       return;
     }
-
     startTransition(async () => {
       const formData = new FormData();
       formData.append("id", itemId.toString());
-      formData.append("delta", delta.toString());
-      await updateQuantity(formData);
-      // Después de la acción, recargamos los datos desde el servidor
-      const res = await fetch(`/api/orders/${orderId}/items`);
-      const newItems = await res.json();
+      formData.append("delta", delta.toString()); // <-- enviar delta
+      formData.append("orderId", orderId.toString());
+      const newItems = await updateQuantity(formData);
       setItems(newItems);
       closeQuantityEditor();
     });
@@ -91,13 +90,18 @@ export default function OrderDetailClient({
 
   const deliverItem = (itemId: number) => {
     startTransition(async () => {
-      const formData = new FormData();
-      formData.append("id", itemId.toString());
-      formData.append("status", "delivered");
-      await updateStatus(formData);
-      const res = await fetch(`/api/orders/${orderId}/items`);
-      const newItems = await res.json();
-      setItems(newItems);
+      try {
+        const formData = new FormData();
+        formData.append("id", itemId.toString());
+        formData.append("status", "delivered");
+        formData.append("orderId", orderId.toString());
+
+        const newItems = await updateStatus(formData);
+        setItems(newItems);
+      } catch (error) {
+        toast.error("Error al marcar como entregado");
+        console.error(error);
+      }
     });
   };
 
@@ -106,24 +110,25 @@ export default function OrderDetailClient({
     const menuItem = menuItems.find((i) => i.id === selectedId);
     if (!menuItem) return;
 
-    // Ver si ya existe un item igual en estado pending
     const existingItem = items.find(
       (i) => i.itemId === selectedId && i.status === "pending",
     );
 
     if (existingItem) {
-      // Incrementar cantidad en +1
       acceptQuantityChange(existingItem.id, 1);
     } else {
-      // Crear nuevo orderItem
       startTransition(async () => {
-        const formData = new FormData();
-        formData.append("orderId", orderId.toString());
-        formData.append("itemId", selectedId.toString());
-        await addItem(formData);
-        const res = await fetch(`/api/orders/${orderId}/items`);
-        const newItems = await res.json();
-        setItems(newItems);
+        try {
+          const formData = new FormData();
+          formData.append("orderId", orderId.toString());
+          formData.append("itemId", selectedId.toString());
+
+          const newItems = await addItem(formData);
+          setItems(newItems);
+        } catch (error) {
+          toast.error("Error al agregar item");
+          console.error(error);
+        }
       });
     }
   };
@@ -144,9 +149,7 @@ export default function OrderDetailClient({
           <div className="flex justify-between items-start gap-4">
             <div>
               <CardTitle className="text-3xl">Orden {orderId}</CardTitle>
-              <p className="text-muted-foreground mt-1">
-                Mesa 3 · Atendida por Ana López
-              </p>
+              <p className="text-muted-foreground mt-1">Mesa 3</p>
             </div>
             <div className="text-right">
               <p className="text-sm text-muted-foreground">Total</p>
@@ -277,10 +280,7 @@ export default function OrderDetailClient({
                             size="sm"
                             variant="default"
                             onClick={() =>
-                              acceptQuantityChange(
-                                item.id,
-                                draftQuantity - item.cantidad,
-                              )
+                              acceptQuantityChange(item.id, draftQuantity)
                             }
                             disabled={isPending}
                           >

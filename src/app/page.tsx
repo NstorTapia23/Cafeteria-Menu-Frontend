@@ -1,4 +1,5 @@
 "use client";
+import RegisterForm from "@/components/RegisterForm";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
@@ -8,6 +9,7 @@ export default function Home() {
     <div>
       <Image src="/Favicon.webp" alt="Logo" width={120} height={120} priority />
       <button onClick={() => router.push("/admin")}>Ir a admin</button>
+      <RegisterForm></RegisterForm>
     </div>
   );
 }

@@ -1,9 +1,12 @@
 "use client";
+import CreateItemPage from "@/components/commons/newItemForm";
 import { useAuthContext } from "@/contexts/AuthContext";
 
 export default function DashboardPage() {
   const auth = useAuthContext();
   return (
-    <div>{auth.user?.role !== "dependiente" && <label>Hola Hola</label>}</div>
+    <div>
+      <CreateItemPage></CreateItemPage>
+    </div>
   );
 }
