@@ -1,6 +1,7 @@
 "use server";
 
 import {
+  closeOrder,
   createOrderItem,
   getOrderItemsByOrderId,
   updateOrderItemQuantity,
@@ -12,6 +13,7 @@ import {
   updateOrderItemStatusSchema,
   type OrderItem,
 } from "@/schemas/orderItemsSchemas";
+import { Console } from "console";
 import { revalidatePath } from "next/cache";
 
 // Obtener items (para uso interno o en servidor)
@@ -57,4 +59,16 @@ export async function addItem(formData: FormData): Promise<OrderItem[]> {
   console.log(validated);
   revalidatePath(`/admin/workspace/orders/${orderId}`);
   return await getOrderItemsByOrderId(orderId);
+}
+export async function CloseOrderById(orderId: number) {
+  try {
+    await closeOrder(orderId);
+    return { ok: true as const };
+  } catch (err) {
+    console.error(err);
+    return {
+      ok: false as const,
+      message: err instanceof Error ? err.message : "Error inesperado",
+    };
+  }
 }

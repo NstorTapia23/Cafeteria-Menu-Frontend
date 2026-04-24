@@ -1,12 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import type React from "react";
+
 import { cn } from "@/lib/utils";
 import { OrdersCard } from "./commons/ordersCards";
 import { NewOrderForm } from "./commons/newOrdersForm";
 import { useAuth } from "@/hooks/useAuthContext";
+import type { orderItemStatusType } from "@/repositories/orderItems";
 
-interface Order {
+interface OrderCardData {
   id: number;
   numberTable: number;
   status: "open" | "closed" | "canceled";
@@ -14,16 +17,17 @@ interface Order {
   items?: string[];
 }
 
-interface PendingProduct {
-  id: number;
-  producto: string;
-  cantidad: number;
+interface PendingProductCardData {
+  orderId: number;
+  itemName: string;
+  quantity: number;
   numberTable: number;
+  status: orderItemStatusType;
 }
 
 interface OrdersAndPendsClientProps {
-  ordenesIniciales: Order[];
-  pendientesIniciales: PendingProduct[];
+  ordenesIniciales: OrderCardData[];
+  pendientesIniciales: PendingProductCardData[];
 }
 
 type TabType = "ordenes" | "pendientes" | "nueva";
@@ -33,7 +37,7 @@ export default function OrdersAndPendsClient({
   pendientesIniciales,
 }: OrdersAndPendsClientProps) {
   const [activeTab, setActiveTab] = useState<TabType>("ordenes");
-  const { user } = useAuth(); // Obtiene el ID del trabajador logueado
+  const { user } = useAuth();
 
   return (
     <main className="min-h-screen bg-gray-50 p-6">
@@ -44,12 +48,14 @@ export default function OrdersAndPendsClient({
         >
           Órdenes
         </TabButton>
+
         <TabButton
           active={activeTab === "pendientes"}
           onClick={() => setActiveTab("pendientes")}
         >
           Pendientes
         </TabButton>
+
         <TabButton
           active={activeTab === "nueva"}
           onClick={() => setActiveTab("nueva")}
@@ -60,29 +66,17 @@ export default function OrdersAndPendsClient({
 
       <section className="mt-6">
         {activeTab === "ordenes" && (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {ordenesIniciales.map((orden) => (
-              <OrdersCard key={orden.id} data={orden} type="orden" />
-            ))}
-          </div>
+          <OrdersSection ordenes={ordenesIniciales} />
         )}
 
         {activeTab === "pendientes" && (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {pendientesIniciales.map((pendiente) => (
-              <OrdersCard
-                key={pendiente.id}
-                data={pendiente}
-                type="pendiente"
-              />
-            ))}
-          </div>
+          <PendingSection pendientes={pendientesIniciales} />
         )}
 
         {activeTab === "nueva" && user?.id && (
           <NewOrderForm
-            workerId={parseInt(user.id)}
-            onSuccess={() => setActiveTab("ordenes")} // Vuelve a órdenes tras crear
+            workerId={Number(user.id)}
+            onSuccess={() => setActiveTab("ordenes")}
           />
         )}
 
@@ -93,6 +87,91 @@ export default function OrdersAndPendsClient({
         )}
       </section>
     </main>
+  );
+}
+
+function OrdersSection({ ordenes }: { ordenes: OrderCardData[] }) {
+  if (!ordenes.length) {
+    return (
+      <p className="text-center text-gray-500">No hay órdenes disponibles.</p>
+    );
+  }
+
+  return (
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {ordenes.map((orden) => (
+        <OrdersCard key={orden.id} data={orden} type="orden" />
+      ))}
+    </div>
+  );
+}
+
+function PendingSection({
+  pendientes,
+}: {
+  pendientes: PendingProductCardData[];
+}) {
+  if (!pendientes.length) {
+    return (
+      <p className="text-center text-gray-500">No hay productos pendientes.</p>
+    );
+  }
+
+  return (
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {pendientes.map((pendiente) => (
+        <PendingProductCard
+          key={`${pendiente.orderId}-${pendiente.itemName}`}
+          pendiente={pendiente}
+        />
+      ))}
+    </div>
+  );
+}
+
+function PendingProductCard({
+  pendiente,
+}: {
+  pendiente: PendingProductCardData;
+}) {
+  const statusStyles: Record<orderItemStatusType, string> = {
+    pending: "bg-yellow-100 text-yellow-800",
+    cooked: "bg-green-100 text-green-800",
+    delivered: "bg-blue-100 text-blue-800",
+    canceled: "bg-red-100 text-red-800",
+  } as Record<orderItemStatusType, string>;
+
+  return (
+    <article className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium text-gray-500">
+            Mesa {pendiente.numberTable}
+          </p>
+          <h3 className="text-lg font-semibold text-gray-900">
+            {pendiente.itemName}
+          </h3>
+        </div>
+
+        <span
+          className={cn(
+            "rounded-full px-3 py-1 text-xs font-medium capitalize",
+            statusStyles[pendiente.status] ?? "bg-gray-100 text-gray-700",
+          )}
+        >
+          {pendiente.status}
+        </span>
+      </div>
+
+      <div className="space-y-1 text-sm text-gray-600">
+        <p>
+          Cantidad: <span className="font-semibold">{pendiente.quantity}</span>
+        </p>
+        <p>
+          Orden: <span className="font-semibold">#{pendiente.orderId}</span>
+        </p>
+      </div>
+    </article>
   );
 }
 
@@ -107,7 +186,7 @@ function TabButton({ active, onClick, children }: TabButtonProps) {
     <button
       onClick={onClick}
       className={cn(
-        "px-6 py-2 text-sm font-medium rounded-md transition-colors",
+        "rounded-md px-6 py-2 text-sm font-medium transition-colors",
         active
           ? "bg-blue-600 text-white shadow-sm hover:bg-blue-700"
           : "text-gray-600 hover:bg-gray-100 hover:text-gray-900",

@@ -1,9 +1,16 @@
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, isNull, ne, sql } from "drizzle-orm";
 import { db } from "@/db/index"; // tu conexión a la BD
-import { orderItems, items, prices } from "@/db/schema"; // tus definiciones de tablas
+import {
+  orderItems,
+  items,
+  prices,
+  orders,
+  orderItemStatus,
+} from "@/db/schema"; // tus definiciones de tablas
 import z from "zod";
 import {
   createOrderItemSchema,
+  orderItemStatusSchema,
   updateOrderItemQuantitySchema,
   updateOrderItemStatusSchema,
 } from "@/schemas/orderItemsSchemas";
@@ -150,4 +157,66 @@ export async function createOrderItem(
       .name,
     totalAmount,
   };
+}
+
+export async function closeOrder(orderId: number) {
+  return await db.transaction(async (tx) => {
+    const order = await tx.query.orders.findFirst({
+      where: eq(orders.id, orderId),
+    });
+
+    if (!order) {
+      throw new Error("La orden no existe.");
+    }
+
+    if (order.status !== "open") {
+      throw new Error("La orden no está en estado open.");
+    }
+
+    const pendingItems = await tx
+      .select({
+        count: sql<number>`count(*)`,
+      })
+      .from(orderItems)
+      .where(
+        and(
+          eq(orderItems.orderId, orderId),
+          ne(orderItems.status, "delivered"),
+        ),
+      );
+
+    const pendingCount = Number(pendingItems[0]?.count ?? 0);
+
+    if (pendingCount > 0) {
+      throw new Error(
+        "No se puede cerrar la orden porque existen items no entregados.",
+      );
+    }
+
+    const result = await tx
+      .update(orders)
+      .set({
+        status: "closed",
+        closedAt: new Date(),
+      })
+      .where(eq(orders.id, orderId))
+      .returning();
+
+    return result[0];
+  });
+}
+type orderItemStatusType = z.infer<typeof orderItemStatusSchema>;
+export async function getOrderItemsByStatus(status: orderItemStatusType) {
+  return await db
+    .select({
+      orderId: orders.id,
+      itemName: items.name,
+      quantity: orderItems.quantity,
+      numberTable: orders.numberTable,
+      status: orderItems.status,
+    })
+    .from(orderItems)
+    .innerJoin(orders, eq(orders.id, orderItems.orderId))
+    .innerJoin(items, eq(items.id, orderItems.itemId))
+    .where(eq(orderItems.status, status));
 }

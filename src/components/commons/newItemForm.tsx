@@ -119,9 +119,7 @@ export default function CreateItemPage() {
             {errors.price && (
               <p className="text-sm text-destructive">{errors.price.message}</p>
             )}
-            <p className="text-sm text-muted-foreground">
-              Precio en dólares (ej: 10.99)
-            </p>
+            <p className="text-sm text-muted-foreground">Precio (ej: 10.99)</p>
           </div>
 
           {/* Área de elaboración */}

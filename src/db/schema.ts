@@ -12,7 +12,6 @@ import {
 } from "drizzle-orm/pg-core";
 import { UserRole } from "@/types/roles";
 
-//enums usando el enum global
 export const workerRole = pgEnum("worker_role", [
   UserRole.DEPENDIENTE as string,
   UserRole.BARTENDER as string,
@@ -30,7 +29,6 @@ export const orderItemStatus = pgEnum("order_item_status", [
   "pending",
   "cooked",
   "delivered",
-  "rejected",
 ] as const);
 
 export const elaborationAreas = pgEnum("elaboration_areas", [
