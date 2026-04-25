@@ -29,6 +29,13 @@
       "when": 1776883473647,
       "tag": "0003_right_sersi",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1777056763976,
+      "tag": "0004_talented_eternals",
+      "breakpoints": true
     }
   ]
 }

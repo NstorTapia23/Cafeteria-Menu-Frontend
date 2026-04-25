@@ -7,15 +7,23 @@ export const orderItemStatusSchema = z.enum(orderItemStatus.enumValues);
 export const orderItemsInfo = z.object({
   id: z.number().int().positive(),
   orderId: z.number().int().positive(),
-  itemId: z.number().int().positive(), // ← nuevo campo
+  itemId: z.number().int().positive(),
   name: z.string(),
   cantidad: z.number().int().positive(),
   status: orderItemStatusSchema,
-  totalAmount: z.coerce.number().positive(),
+  totalAmount: z.coerce.number(),
 });
-
 export const OrderItemsSchema = z.array(orderItemsInfo);
 export type OrderItem = z.infer<typeof orderItemsInfo>;
+
+export const PendsForCook = z.object({
+  orderId: z.number().int().positive(),
+  itemName: z.string(),
+  numberTable: z.number().positive().int(),
+  cantidad: z.number().int().positive(),
+});
+export const PendsForCookArray = z.array(PendsForCook);
+export type PendsForCookType = z.infer<typeof PendsForCookArray>;
 
 export const updateOrderItemQuantitySchema = z.object({
   id: z.number().int().positive(),

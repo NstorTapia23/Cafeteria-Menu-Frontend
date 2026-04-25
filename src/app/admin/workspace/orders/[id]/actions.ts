@@ -13,7 +13,6 @@ import {
   updateOrderItemStatusSchema,
   type OrderItem,
 } from "@/schemas/orderItemsSchemas";
-import { Console } from "console";
 import { revalidatePath } from "next/cache";
 
 // Obtener items (para uso interno o en servidor)

@@ -10,6 +10,7 @@ export enum UserRole {
   BARTENDER = "bartender",
   COCINERO = "cocinero",
   ADMIN = "admin",
+  LUNCH = "lunch",
 }
 
 /**
@@ -30,6 +31,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   [UserRole.BARTENDER]: "Bartender",
   [UserRole.COCINERO]: "Cocinero",
   [UserRole.ADMIN]: "Administrador",
+  [UserRole.LUNCH]: "Lunch",
 };
 
 export const ROLE_OPTIONS = AVAILABLE_ROLES.map((role) => ({

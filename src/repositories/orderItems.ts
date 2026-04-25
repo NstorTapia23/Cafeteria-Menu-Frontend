@@ -1,12 +1,6 @@
 import { and, eq, isNull, ne, sql } from "drizzle-orm";
 import { db } from "@/db/index"; // tu conexión a la BD
-import {
-  orderItems,
-  items,
-  prices,
-  orders,
-  orderItemStatus,
-} from "@/db/schema"; // tus definiciones de tablas
+import { orderItems, items, prices, orders } from "@/db/schema";
 import z from "zod";
 import {
   createOrderItemSchema,
@@ -205,7 +199,7 @@ export async function closeOrder(orderId: number) {
     return result[0];
   });
 }
-type orderItemStatusType = z.infer<typeof orderItemStatusSchema>;
+export type orderItemStatusType = z.infer<typeof orderItemStatusSchema>;
 export async function getOrderItemsByStatus(status: orderItemStatusType) {
   return await db
     .select({

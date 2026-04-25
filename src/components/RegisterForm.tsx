@@ -53,7 +53,7 @@ export default function RegisterForm() {
     clearError();
     const result = await registerUser(data.name, data.password, data.role);
     if (result.success) {
-      router.push("/admin/system");
+      router.push("/admin/workspace/system");
     }
   };
 

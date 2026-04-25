@@ -23,11 +23,11 @@ async function verifyToken(token: string): Promise<TokenPayload> {
 // 🔐 Definición de permisos por prefijo de ruta (solo para rutas protegidas)
 const routePermissions: Record<string, string[]> = {
   "/admin/workspace/dashboard": ["admin"],
-  "/admin/workspace/system": ["cocinero", "bartender", "admin"],
+  "/admin/workspace/system": ["cocinero", "bartender", "lunch", "admin"],
   "/admin/workspace/orders": ["dependiente", "admin"],
   // Puedes agregar más rutas protegidas aquí, por ejemplo:
   // "/admin/reports": ["admin"],
-  // "/admin/profile": ["admin", "dependiente", "cocinero", "bartender"], // todos
+  // "/admin/profile": ["admin", "dependiente", "cocinero", "bartender", "lunch"], // todos
 };
 
 function getDefaultRedirectForRole(role: string): string {
@@ -36,6 +36,7 @@ function getDefaultRedirectForRole(role: string): string {
       return "/admin/workspace/orders";
     case "cocinero":
     case "bartender":
+    case "lunch":
       return "/admin/workspace/system";
     case "admin":
       return "/admin/workspace/dashboard";

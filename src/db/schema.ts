@@ -17,6 +17,7 @@ export const workerRole = pgEnum("worker_role", [
   UserRole.BARTENDER as string,
   UserRole.COCINERO as string,
   UserRole.ADMIN as string,
+  UserRole.LUNCH as string,
 ]);
 
 export const orderStatus = pgEnum("order_status", [

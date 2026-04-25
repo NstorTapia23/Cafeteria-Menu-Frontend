@@ -1,4 +1,3 @@
-// app/admin/workspace/orders/[id]/page.tsx
 import OrderDetailPage from "@/components/OrderViewsInfo";
 import {
   getOrderItemsByOrderId,
@@ -14,12 +13,8 @@ export default async function IdOrderPage({
   const { id } = await params;
   const orderId = Number(id);
 
-  // Obtener los ítems de la orden (con precios calculados)
   const orderItems = await getOrderItemsByOrderId(orderId);
-  // Validar con Zod
   const parsedOrderItems = OrderItemsSchema.parse(orderItems);
-
-  // Obtener los ítems activos del menú (id, nombre, precio actual)
   const menuItems = await getActiveItemsWithPrice();
 
   return (
