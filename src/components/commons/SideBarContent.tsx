@@ -33,19 +33,19 @@ const allNavItems: NavItem[] = [
     title: "Dashboard",
     href: "/admin/workspace/dashboard",
     icon: LayoutDashboard,
-    roles: ["admin", "superadmin"],
+    roles: ["admin"],
   },
   {
     title: "Pedidos",
     href: "/admin/workspace/orders",
     icon: Package,
-    roles: ["dependiente", "admin", "superadmin"],
+    roles: ["dependiente", "admin"],
   },
   {
     title: "Sistema",
     href: "/admin/workspace/system",
     icon: Settings,
-    roles: ["cocinero", "bartender", "admin", "superadmin"],
+    roles: ["cocinero", "bartender", "admin", "lunch"],
   },
 ];
 

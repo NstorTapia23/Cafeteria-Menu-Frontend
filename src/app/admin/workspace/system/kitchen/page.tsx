@@ -1,5 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ElaborationBoard } from "@/components/workspace/elaboration-board";
 
-export default function KitchenPage() {
-  return <div className="space-y-6"></div>;
+export default function CocinaPage() {
+  return <ElaborationBoard area="cocina" title="Cocina" />;
 }

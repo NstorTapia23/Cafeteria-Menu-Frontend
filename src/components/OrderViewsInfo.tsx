@@ -4,6 +4,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { MoreHorizontal } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +15,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useRouter } from "next/navigation";
 import {
   Popover,
   PopoverContent,
@@ -86,6 +86,32 @@ function mergeItemsPreserveReferences(prev: OrderItem[], next: OrderItem[]) {
   });
 }
 
+function getStatusLabel(status: OrderItem["status"]) {
+  switch (status) {
+    case "pending":
+      return "PENDIENTE";
+    case "cooked":
+      return "LISTO";
+    case "delivered":
+      return "ENTREGADO";
+    default:
+      return status;
+  }
+}
+
+function getStatusStyles(status: OrderItem["status"]) {
+  switch (status) {
+    case "pending":
+      return "bg-yellow-100 text-yellow-800";
+    case "cooked":
+      return "bg-blue-100 text-blue-800";
+    case "delivered":
+      return "bg-green-100 text-green-800";
+    default:
+      return "bg-muted text-foreground";
+  }
+}
+
 const OrderItemRow = memo(function OrderItemRow({
   item,
   unitPrice,
@@ -100,6 +126,8 @@ const OrderItemRow = memo(function OrderItemRow({
   onAcceptQuantityChange,
 }: OrderItemRowProps) {
   const isDelivered = item.status === "delivered";
+  const canEditQuantity = item.status === "pending";
+  const canDeliver = item.status === "cooked";
 
   return (
     <div
@@ -122,12 +150,10 @@ const OrderItemRow = memo(function OrderItemRow({
         <span
           className={cn(
             "inline-flex rounded-full px-2 py-0.5 text-xs font-medium",
-            item.status === "pending"
-              ? "bg-yellow-100 text-yellow-800"
-              : "bg-green-100 text-green-800",
+            getStatusStyles(item.status),
           )}
         >
-          {item.status === "pending" ? "PENDIENTE" : "ENTREGADO"}
+          {getStatusLabel(item.status)}
         </span>
 
         <span className="w-6 text-center text-sm font-medium">
@@ -138,7 +164,7 @@ const OrderItemRow = memo(function OrderItemRow({
           size="sm"
           variant="secondary"
           onClick={() => onDeliver(item.id)}
-          disabled={item.status !== "pending" || isActionPending}
+          disabled={!canDeliver || isActionPending}
         >
           Entregar
         </Button>
@@ -150,7 +176,9 @@ const OrderItemRow = memo(function OrderItemRow({
               onCloseQuantityEditor();
               return;
             }
-            onOpenQuantityEditor(item.id, item.cantidad);
+            if (canEditQuantity) {
+              onOpenQuantityEditor(item.id, item.cantidad);
+            }
           }}
         >
           <PopoverTrigger asChild>
@@ -159,7 +187,7 @@ const OrderItemRow = memo(function OrderItemRow({
               size="icon"
               className="h-8 w-8"
               aria-label="Opciones de cantidad"
-              disabled={item.status !== "pending" || isActionPending}
+              disabled={!canEditQuantity || isActionPending}
             >
               <MoreHorizontal className="h-4 w-4" />
             </Button>

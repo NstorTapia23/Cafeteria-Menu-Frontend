@@ -11,7 +11,7 @@ const secret = new TextEncoder().encode(
 interface TokenPayload {
   id: string;
   name: string;
-  role: "admin" | "dependiente" | "cocinero" | "bartender";
+  role: "admin" | "dependiente" | "cocinero" | "bartender" | "lunch";
   // otros campos si los tienes
 }
 
@@ -22,12 +22,18 @@ async function verifyToken(token: string): Promise<TokenPayload> {
 
 // 🔐 Definición de permisos por prefijo de ruta (solo para rutas protegidas)
 const routePermissions: Record<string, string[]> = {
-  "/admin/workspace/dashboard": ["admin"],
+  "/admin/workspace/dashboard": ["admin", "superadmin"],
+  "/admin/workspace/dashboard/register": ["admin", "superadmin"],
   "/admin/workspace/system": ["cocinero", "bartender", "lunch", "admin"],
-  "/admin/workspace/orders": ["dependiente", "admin"],
-  // Puedes agregar más rutas protegidas aquí, por ejemplo:
-  // "/admin/reports": ["admin"],
-  // "/admin/profile": ["admin", "dependiente", "cocinero", "bartender", "lunch"], // todos
+  "/admin/workspace/orders": ["dependiente", "admin", "superadmin"],
+  "/admin/profile": [
+    "admin",
+    "superadmin",
+    "dependiente",
+    "cocinero",
+    "bartender",
+    "lunch",
+  ],
 };
 
 function getDefaultRedirectForRole(role: string): string {

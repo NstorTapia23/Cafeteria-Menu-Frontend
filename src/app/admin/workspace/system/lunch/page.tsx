@@ -1,3 +1,5 @@
+import { ElaborationBoard } from "@/components/workspace/elaboration-board";
+
 export default function LunchPage() {
-  return <div className="space-y-6"></div>;
+  return <ElaborationBoard area="lunch" title="Lunch" />;
 }

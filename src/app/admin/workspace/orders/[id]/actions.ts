@@ -1,5 +1,5 @@
 "use server";
-
+import { getOrderItemContextById } from "@/repositories/orderItems.realtime";
 import {
   closeOrder,
   createOrderItem,
@@ -13,36 +13,78 @@ import {
   updateOrderItemStatusSchema,
   type OrderItem,
 } from "@/schemas/orderItemsSchemas";
+import { publishOrderItemsEvent } from "@/lib/realtime/order-items-bus";
 import { revalidatePath } from "next/cache";
 
-// Obtener items (para uso interno o en servidor)
 export async function getItems(orderId: number): Promise<OrderItem[]> {
-  const retorno = await getOrderItemsByOrderId(orderId);
-  console.log(retorno);
-  return retorno;
+  return await getOrderItemsByOrderId(orderId);
 }
+
 export async function updateQuantity(formData: FormData) {
   const id = Number(formData.get("id"));
   const delta = Number(formData.get("delta"));
   const orderId = Number(formData.get("orderId"));
+
+  const context = await getOrderItemContextById(id);
+  if (!context) {
+    throw new Error(`Order item with id ${id} not found`);
+  }
+
   const validated = updateOrderItemQuantitySchema.parse({
     id,
     quantity: delta,
   });
-  await updateOrderItemQuantity(validated);
+
+  const result = await updateOrderItemQuantity(validated);
+
+  publishOrderItemsEvent({
+    type: result.deleted ? "item-deleted" : "item-updated",
+    orderId: context.orderId,
+    itemId: context.itemId,
+    area: context.area,
+  });
+
   revalidatePath(`/admin/workspace/orders/${orderId}`);
   return await getOrderItemsByOrderId(orderId);
 }
-export async function updateStatus(formData: FormData): Promise<OrderItem[]> {
-  const id = Number(formData.get("id"));
-  const status = formData.get("status") as string;
-  const orderId = Number(formData.get("orderId"));
+
+async function updateStatusInternal(
+  id: number,
+  status: "pending" | "cooked" | "delivered",
+  orderId: number,
+) {
+  const context = await getOrderItemContextById(id);
+  if (!context) {
+    throw new Error(`Order item with id ${id} not found`);
+  }
 
   const validated = updateOrderItemStatusSchema.parse({ id, status });
   await updateOrderItemStatus(validated);
 
+  publishOrderItemsEvent({
+    type: "item-updated",
+    orderId: context.orderId,
+    itemId: context.itemId,
+    area: context.area,
+  });
+
   revalidatePath(`/admin/workspace/orders/${orderId}`);
   return await getOrderItemsByOrderId(orderId);
+}
+
+export async function updateStatus(formData: FormData): Promise<OrderItem[]> {
+  const id = Number(formData.get("id"));
+  const status = formData.get("status") as "pending" | "cooked" | "delivered";
+  const orderId = Number(formData.get("orderId"));
+
+  return await updateStatusInternal(id, status, orderId);
+}
+
+export async function markItemCooked(formData: FormData): Promise<OrderItem[]> {
+  const id = Number(formData.get("id"));
+  const orderId = Number(formData.get("orderId"));
+
+  return await updateStatusInternal(id, "cooked", orderId);
 }
 
 export async function addItem(formData: FormData): Promise<OrderItem[]> {
@@ -54,14 +96,29 @@ export async function addItem(formData: FormData): Promise<OrderItem[]> {
     itemId,
     quantity: 1,
   });
-  await createOrderItem(validated);
-  console.log(validated);
+
+  const created = await createOrderItem(validated);
+
+  publishOrderItemsEvent({
+    type: "item-created",
+    orderId: created.orderId,
+    itemId: created.itemId,
+    area: created.elaborationArea,
+  });
+
   revalidatePath(`/admin/workspace/orders/${orderId}`);
   return await getOrderItemsByOrderId(orderId);
 }
+
 export async function CloseOrderById(orderId: number) {
   try {
     await closeOrder(orderId);
+
+    publishOrderItemsEvent({
+      type: "order-closed",
+      orderId,
+    });
+
     return { ok: true as const };
   } catch (err) {
     console.error(err);

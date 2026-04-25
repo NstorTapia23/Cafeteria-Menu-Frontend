@@ -1,6 +1,12 @@
 import { and, eq, isNull, ne, sql } from "drizzle-orm";
 import { db } from "@/db/index"; // tu conexión a la BD
-import { orderItems, items, prices, orders } from "@/db/schema";
+import {
+  orderItems,
+  items,
+  prices,
+  orders,
+  elaborationAreas,
+} from "@/db/schema";
 import z from "zod";
 import {
   createOrderItemSchema,
@@ -116,20 +122,25 @@ export async function getActiveItemsWithPrice() {
       ),
     );
 }
-
-// Crear un nuevo orderItem
 export async function createOrderItem(
   data: z.infer<typeof createOrderItemSchema>,
 ) {
   const { orderId, itemId, quantity } = createOrderItemSchema.parse(data);
 
-  // Obtener el precio unitario vigente
   const priceRecord = await db.query.prices.findFirst({
     where: and(eq(prices.itemId, itemId), isNull(prices.validTo)),
   });
 
   if (!priceRecord) {
     throw new Error(`No active price found for item ${itemId}`);
+  }
+
+  const itemRecord = await db.query.items.findFirst({
+    where: eq(items.id, itemId),
+  });
+
+  if (!itemRecord) {
+    throw new Error(`Item ${itemId} not found`);
   }
 
   const unitPrice = priceRecord.amount;
@@ -147,9 +158,9 @@ export async function createOrderItem(
 
   return {
     ...newOrderItem,
-    name: (await db.query.items.findFirst({ where: eq(items.id, itemId) }))!
-      .name,
+    name: itemRecord.name,
     totalAmount,
+    elaborationArea: itemRecord.elaborationArea,
   };
 }
 
@@ -199,18 +210,33 @@ export async function closeOrder(orderId: number) {
     return result[0];
   });
 }
+
 export type orderItemStatusType = z.infer<typeof orderItemStatusSchema>;
-export async function getOrderItemsByStatus(status: orderItemStatusType) {
+type elaborationAreaType = "cocina" | "bar" | "lunch";
+
+export async function getOrderItemsByStatus(
+  status: orderItemStatusType,
+  EASection: elaborationAreaType,
+) {
   return await db
     .select({
+      id: orderItems.id,
       orderId: orders.id,
+      itemId: items.id,
       itemName: items.name,
       quantity: orderItems.quantity,
       numberTable: orders.numberTable,
       status: orderItems.status,
+      elaborationArea: items.elaborationArea,
     })
     .from(orderItems)
     .innerJoin(orders, eq(orders.id, orderItems.orderId))
     .innerJoin(items, eq(items.id, orderItems.itemId))
-    .where(eq(orderItems.status, status));
+    .where(
+      and(
+        eq(orderItems.status, status),
+        eq(orders.status, "open"),
+        eq(items.elaborationArea, EASection),
+      ),
+    );
 }

@@ -44,6 +44,7 @@ export const workers = pgTable("workers", {
   password: varchar("password", { length: 255 }).notNull(),
   role: workerRole("worker_role").default("dependiente").notNull(),
 });
+
 export const items = pgTable("items", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
