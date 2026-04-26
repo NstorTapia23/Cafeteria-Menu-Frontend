@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/db";
 import { workers } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { comparePassword, createSessionToken } from "@/lib/auth";
 import { UserRole } from "@/types/roles";
 
@@ -25,7 +25,7 @@ export async function POST(req: Request) {
     const user = await db
       .select()
       .from(workers)
-      .where(eq(workers.name, name))
+      .where(and(eq(workers.name, name), isNull(workers.delete_at)))
       .limit(1);
 
     if (user.length === 0) {

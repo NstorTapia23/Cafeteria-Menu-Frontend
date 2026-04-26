@@ -36,6 +36,13 @@
       "when": 1777056763976,
       "tag": "0004_talented_eternals",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1777227409741,
+      "tag": "0005_superb_jazinda",
+      "breakpoints": true
     }
   ]
 }

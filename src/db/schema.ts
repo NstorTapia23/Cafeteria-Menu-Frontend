@@ -43,6 +43,8 @@ export const workers = pgTable("workers", {
   name: varchar("name", { length: 255 }).notNull().unique(),
   password: varchar("password", { length: 255 }).notNull(),
   role: workerRole("worker_role").default("dependiente").notNull(),
+  create_at: timestamp({ withTimezone: true }).defaultNow().notNull(),
+  delete_at: timestamp({ withTimezone: true }),
 });
 
 export const items = pgTable("items", {

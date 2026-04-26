@@ -44,6 +44,7 @@ export async function POST(req: Request) {
         name,
         password: hashedPassword,
         role,
+        create_at: new Date(),
       })
       .returning({
         id: workers.id,
