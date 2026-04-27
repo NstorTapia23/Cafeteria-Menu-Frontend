@@ -4,17 +4,15 @@
 import { db } from "@/db";
 import { items, prices } from "@/db/schema";
 import { createItemSchema } from "@/schemas/ItemsSchemas";
-import { revalidatePath } from "next/cache";
 
 export type ItemType = {
   name: string;
-  description?: string | null;
+  description?: string;
   price: number;
   elaborationArea: "cocina" | "bar" | "lunch";
 };
 
 export async function createItemMenu(item: ItemType) {
-  // Validación del lado del servidor (recomendada)
   const validated = createItemSchema.safeParse(item);
   if (!validated.success) {
     throw new Error(validated.error.message);

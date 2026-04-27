@@ -1,12 +1,6 @@
 import { and, eq, isNull, ne, sql } from "drizzle-orm";
 import { db } from "@/db/index"; // tu conexión a la BD
-import {
-  orderItems,
-  items,
-  prices,
-  orders,
-  elaborationAreas,
-} from "@/db/schema";
+import { orderItems, items, prices, orders } from "@/db/schema";
 import z from "zod";
 import {
   createOrderItemSchema,
@@ -239,4 +233,22 @@ export async function getOrderItemsByStatus(
         eq(items.elaborationArea, EASection),
       ),
     );
+}
+
+export async function getCookedElementsCard(status: orderItemStatusType) {
+  return await db
+    .select({
+      id: orderItems.id,
+      orderId: orders.id,
+      itemId: items.id,
+      itemName: items.name,
+      quantity: orderItems.quantity,
+      numberTable: orders.numberTable,
+      status: orderItems.status,
+      elaborationArea: items.elaborationArea,
+    })
+    .from(orderItems)
+    .innerJoin(orders, eq(orders.id, orderItems.orderId))
+    .innerJoin(items, eq(items.id, orderItems.itemId))
+    .where(and(eq(orderItems.status, status), eq(orders.status, "open")));
 }

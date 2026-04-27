@@ -12,7 +12,7 @@ export type CreateItemInput = z.infer<typeof createItemSchema>;
 export const updateItemSchema = z.object({
   id: number().int().positive(),
   name: z.string().min(1).optional(),
-  description: z.string().min(1).optional(),
+  description: z.string().min(1).optional().nullable(),
   price: z.number().min(0).optional(),
   elaborationArea: z.enum(["cocina", "bar", "lunch"]).optional(),
 });

@@ -19,7 +19,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 
-import { createItemMenu } from "@/app/admin/workspace/dashboard/actions";
+import { createItemMenu } from "@/app/admin/workspace/dashboard/menu/actions";
 import { createItemSchema, type CreateItemInput } from "@/schemas/ItemsSchemas";
 
 export default function CreateItemPage() {
@@ -47,7 +47,7 @@ export default function CreateItemPage() {
     try {
       const result = await createItemMenu({
         name: values.name,
-        description: values.description || null,
+        description: values.description,
         price: values.price,
         elaborationArea: values.elaborationArea,
       });

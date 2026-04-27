@@ -31,7 +31,7 @@ interface NavItem {
 const allNavItems: NavItem[] = [
   {
     title: "Dashboard",
-    href: "/admin/workspace/dashboard",
+    href: "/admin/workspace/dashboard/metrics",
     icon: LayoutDashboard,
     roles: ["admin"],
   },

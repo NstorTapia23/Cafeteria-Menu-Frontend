@@ -2,7 +2,7 @@
 import { CreateNewOrder, getOpenOrders } from "@/repositories/orders";
 import { revalidatePath } from "next/cache";
 import { CreateOrderSchema } from "@/schemas/ordersSchema";
-import { getOrderItemsByStatus } from "@/repositories/orderItems";
+import { getCookedElementsCard } from "@/repositories/orderItems";
 export async function OrdersAction() {
   const allOpenOrders = await getOpenOrders();
   return allOpenOrders;
@@ -28,6 +28,6 @@ export async function createOrder(formData: FormData) {
 }
 
 export async function getOrderItemsCooked() {
-  const orderItemsCooked = await getOrderItemsByStatus("cooked");
+  const orderItemsCooked = await getCookedElementsCard("cooked");
   return orderItemsCooked;
 }
