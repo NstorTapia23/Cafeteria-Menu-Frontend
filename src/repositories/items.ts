@@ -7,13 +7,21 @@ import type { UpdateItemSchema } from "@/schemas/ItemsSchemas";
 type ItemType = z.infer<typeof createItemSchema>;
 
 export async function createItemMenu(item: ItemType) {
+  const validated = createItemSchema.safeParse(item);
+  if (!validated.success) {
+    throw new Error(validated.error.message);
+  }
+
+  const data = validated.data;
+
   return db.transaction(async (tx) => {
     const newItem = await tx
       .insert(items)
       .values({
-        name: item.name,
-        elaborationArea: item.elaborationArea,
-        description: item.description,
+        name: data.name,
+        elaborationArea: data.elaborationArea,
+        description: data.description,
+        imageUrl: data.url ?? null,
         is_active: true,
       })
       .returning();
@@ -24,7 +32,7 @@ export async function createItemMenu(item: ItemType) {
       .insert(prices)
       .values({
         itemId: newItem[0].id,
-        amount: item.price,
+        amount: data.price,
       })
       .returning();
 
