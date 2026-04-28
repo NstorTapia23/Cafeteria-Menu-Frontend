@@ -4,7 +4,6 @@ import { MenuItemCard } from "@/components/commons/Menu-Item-Card";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { getItemsForMenu } from "./actions";
-import RegisterForm from "@/components/RegisterForm";
 
 type MenuInfoType = {
   id: number;
@@ -45,7 +44,7 @@ export default function Home() {
   return (
     <div className="relative flex flex-col items-center justify-center pt-10 pb-6 overflow-hidden">
       {/* Fondo base */}
-      <div className="absolute inset-0 -z-20 bg-gradient-to-b from-blue-50 via-white to-white" />
+      <div className="absolute inset-0 -z-20 bg-linear-to-b from-blue-50 via-white to-white" />
 
       {/* Parallax decorativo 2 (islazul) */}
       <div
