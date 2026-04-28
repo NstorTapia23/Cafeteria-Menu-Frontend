@@ -98,7 +98,6 @@ export default function Home() {
           <MenuItemCard key={item.id} item={item} />
         ))}
       </div>
-      <RegisterForm />
     </div>
   );
 }
