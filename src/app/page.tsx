@@ -4,6 +4,7 @@ import { MenuItemCard } from "@/components/commons/Menu-Item-Card";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { getItemsForMenu } from "./actions";
+import RegisterForm from "@/components/RegisterForm";
 
 type MenuInfoType = {
   id: number;
@@ -97,6 +98,7 @@ export default function Home() {
           <MenuItemCard key={item.id} item={item} />
         ))}
       </div>
+      <RegisterForm />
     </div>
   );
 }
