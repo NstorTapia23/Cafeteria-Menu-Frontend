@@ -67,9 +67,7 @@ function hasAccess(pathname: string, role: string): boolean {
     pathname.startsWith(path),
   );
 
-  if (!matchedPath) {
-    return true;
-  }
+  if (!matchedPath) return true;
 
   return routePermissions[matchedPath].includes(role);
 }
@@ -79,10 +77,12 @@ export async function middleware(req: NextRequest) {
   const token = req.cookies.get("session")?.value;
 
   const isRoot = pathname === "/";
-  const isLogin = pathname === "/admin" || pathname.startsWith("/admin/");
-  const isWorkspace = pathname.startsWith("/workspace");
+  const isAdminLogin = pathname === "/admin";
+  const isWorkspace = pathname.startsWith("/admin/workspace");
 
-  // Raíz pública
+  // =========================
+  // ROOT
+  // =========================
   if (isRoot) {
     if (!token) return NextResponse.next();
 
@@ -98,12 +98,15 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // Login público
-  if (isLogin) {
+  // =========================
+  // LOGIN PAGE (/admin)
+  // =========================
+  if (isAdminLogin) {
     if (!token) return NextResponse.next();
 
     try {
       const payload = await verifyToken(token);
+
       return NextResponse.redirect(
         new URL(getDefaultRedirectForRole(payload.role), req.url),
       );
@@ -114,7 +117,9 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // Zona protegida
+  // =========================
+  // PROTECTED WORKSPACE
+  // =========================
   if (isWorkspace) {
     if (!token) {
       return NextResponse.redirect(new URL("/admin", req.url));
@@ -123,8 +128,8 @@ export async function middleware(req: NextRequest) {
     try {
       const payload = await verifyToken(token);
 
-      // Si entra a /workspace, lo mandamos a su ruta por defecto
-      if (pathname === "/workspace") {
+      // Si entra a /admin/workspace exacto
+      if (pathname === "/admin/workspace") {
         return NextResponse.redirect(
           new URL(getDefaultRedirectForRole(payload.role), req.url),
         );
