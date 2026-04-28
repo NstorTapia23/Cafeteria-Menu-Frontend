@@ -26,17 +26,17 @@ async function verifyToken(token: string): Promise<TokenPayload> {
 }
 
 const routePermissions: Record<string, string[]> = {
-  "/workspace/dashboard": ["admin", "superadmin"],
-  "/workspace/register": ["admin", "superadmin"],
-  "/workspace/system": [
+  "/admin/workspace/dashboard": ["admin", "superadmin"],
+  "/admin/workspace/register": ["admin", "superadmin"],
+  "/admin/workspace/system": [
     "cocinero",
     "bartender",
     "lunch",
     "admin",
     "superadmin",
   ],
-  "/workspace/orders": ["dependiente", "admin", "superadmin"],
-  "/workspace/profile": [
+  "/admin/workspace/orders": ["dependiente", "admin", "superadmin"],
+  "/admin/workspace/profile": [
     "admin",
     "superadmin",
     "dependiente",
@@ -49,16 +49,16 @@ const routePermissions: Record<string, string[]> = {
 function getDefaultRedirectForRole(role: string): string {
   switch (role) {
     case "dependiente":
-      return "/workspace/orders";
+      return "/admin/workspace/orders";
     case "cocinero":
     case "bartender":
     case "lunch":
-      return "/workspace/system";
+      return "/admin/workspace/system";
     case "admin":
     case "superadmin":
-      return "/workspace/dashboard";
+      return "/admin/workspace/dashboard";
     default:
-      return "/workspace";
+      return "/admin/workspace";
   }
 }
 
