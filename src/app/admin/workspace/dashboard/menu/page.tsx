@@ -2,6 +2,14 @@
 import { getItemsForMenu } from "@/app/actions";
 import { MenuItemCard } from "@/components/commons/Menu-Item-Card";
 import CreateItemPage from "@/components/commons/newItemForm";
+import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"; // ← importa el Sheet
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -18,6 +26,7 @@ export default function DashboardMenuPage() {
   const { isAuthenticated, user } = useAuthContext();
   const router = useRouter();
   const [itemsMenu, setItemsMenu] = useState<MenuInfoType[]>([]);
+
   useEffect(() => {
     if (!isAuthenticated || user?.role !== "admin") {
       router.push("/admin");
@@ -33,14 +42,31 @@ export default function DashboardMenuPage() {
   if (!isAuthenticated || user?.role !== "admin") {
     return null;
   }
+
   return (
     <div>
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button>Agregar</Button>
+        </SheetTrigger>
+        <SheetContent
+          side="right"
+          className="w-full sm:max-w-md max-h-screen overflow-y-auto p-4 sm:p-6"
+        >
+          <SheetHeader>
+            <SheetTitle>Nuevo elemento del menú</SheetTitle>
+          </SheetHeader>
+          <div className="w-full">
+            <CreateItemPage />
+          </div>
+        </SheetContent>
+      </Sheet>
+
       <div className="mt-10 w-full max-w-4xl grid grid-cols-1 sm:grid-cols-2 gap-4 px-4">
         {itemsMenu.map((item) => (
           <MenuItemCard key={item.id} item={item} />
         ))}
       </div>
-      <CreateItemPage></CreateItemPage>
     </div>
   );
 }
