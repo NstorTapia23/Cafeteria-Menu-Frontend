@@ -1,40 +1,46 @@
-'use client';
-import { useEffect, useRef } from "react";
-// ...
+"use client";
+import { getItemsForMenu } from "@/app/actions";
+import { MenuItemCard } from "@/components/commons/Menu-Item-Card";
+import CreateItemPage from "@/components/commons/newItemForm";
+import { useAuthContext } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+
+type MenuInfoType = {
+  id: number;
+  name: string;
+  description: string | null;
+  url: string | null;
+  price: number;
+};
 
 export default function DashboardMenuPage() {
   const { isAuthenticated, user } = useAuthContext();
   const router = useRouter();
   const [itemsMenu, setItemsMenu] = useState<MenuInfoType[]>([]);
-  const [loading, setLoading] = useState(true);
-  const fetchedRef = useRef(false);
-
   useEffect(() => {
     if (!isAuthenticated || user?.role !== "admin") {
       router.push("/admin");
-      return; // ✔️ Evita el fetch si no tiene permisos
     }
-
-    if (fetchedRef.current) return; // ✔️ Evita doble fetch
-    fetchedRef.current = true;
-
-    const abortController = new AbortController();
-
     const fetchItems = async () => {
-      try {
-        const response = await getItemsForMenu();
-        if (!abortController.signal.aborted) setItemsMenu(response);
-      } finally {
-        setLoading(false);
-      }
+      const response = await getItemsForMenu();
+      if (!response) return null;
+      setItemsMenu(response);
     };
     fetchItems();
+  }, [isAuthenticated, user, router]);
 
-    return () => abortController.abort(); // ✔️ Cancela la petición al desmontar
-  }, [isAuthenticated, user?.role, router]); // ✔️ Dependencia más precisa
-
-  if (!isAuthenticated || user?.role !== "admin") return null;
-  if (loading) return <div>Cargando menú...</div>;
-
-  return (...);
+  if (!isAuthenticated || user?.role !== "admin") {
+    return null;
+  }
+  return (
+    <div>
+      <div className="mt-10 w-full max-w-4xl grid grid-cols-1 sm:grid-cols-2 gap-4 px-4">
+        {itemsMenu.map((item) => (
+          <MenuItemCard key={item.id} item={item} />
+        ))}
+      </div>
+      <CreateItemPage></CreateItemPage>
+    </div>
+  );
 }
