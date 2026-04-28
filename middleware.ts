@@ -41,11 +41,13 @@ function getDefaultRedirectForRole(role: string): string {
     case "dependiente":
       return "/admin/workspace/orders";
     case "cocinero":
+      return "/admin/workspace/system/kitchen";
     case "bartender":
+      return "/admin/workspace/system/bar";
     case "lunch":
-      return "/admin/workspace/system";
+      return "/admin/workspace/system/lunch";
     case "admin":
-      return "/admin/workspace/dashboard";
+      return "/admin/workspace/dashboard/metrics";
     default:
       return "/admin";
   }
