@@ -11,8 +11,13 @@ const secret = new TextEncoder().encode(
 interface TokenPayload {
   id: string;
   name: string;
-  role: "admin" | "dependiente" | "cocinero" | "bartender" | "lunch";
-  // otros campos si los tienes
+  role:
+    | "admin"
+    | "superadmin"
+    | "dependiente"
+    | "cocinero"
+    | "bartender"
+    | "lunch";
 }
 
 async function verifyToken(token: string): Promise<TokenPayload> {
@@ -20,13 +25,18 @@ async function verifyToken(token: string): Promise<TokenPayload> {
   return payload as unknown as TokenPayload;
 }
 
-// 🔐 Definición de permisos por prefijo de ruta (solo para rutas protegidas)
 const routePermissions: Record<string, string[]> = {
-  "/admin/workspace/dashboard": ["admin", "superadmin"],
-  "/admin/workspace/dashboard/register": ["admin", "superadmin"],
-  "/admin/workspace/system": ["cocinero", "bartender", "lunch", "admin"],
-  "/admin/workspace/orders": ["dependiente", "admin", "superadmin"],
-  "/admin/profile": [
+  "/workspace/dashboard": ["admin", "superadmin"],
+  "/workspace/register": ["admin", "superadmin"],
+  "/workspace/system": [
+    "cocinero",
+    "bartender",
+    "lunch",
+    "admin",
+    "superadmin",
+  ],
+  "/workspace/orders": ["dependiente", "admin", "superadmin"],
+  "/workspace/profile": [
     "admin",
     "superadmin",
     "dependiente",
@@ -39,99 +49,106 @@ const routePermissions: Record<string, string[]> = {
 function getDefaultRedirectForRole(role: string): string {
   switch (role) {
     case "dependiente":
-      return "/admin/workspace/orders";
+      return "/workspace/orders";
     case "cocinero":
     case "bartender":
     case "lunch":
-      return "/admin/workspace/system";
+      return "/workspace/system";
     case "admin":
-      return "/admin/workspace/dashboard";
+    case "superadmin":
+      return "/workspace/dashboard";
     default:
-      return "/admin";
+      return "/workspace";
   }
 }
 
-// 🔍 Verifica si una ruta está protegida y si el rol tiene acceso
 function hasAccess(pathname: string, role: string): boolean {
-  // Si la ruta no empieza con "/admin", asumimos que es pública (ajusta si hay más áreas protegidas)
-  if (!pathname.startsWith("/admin")) {
-    return true; // rutas no-admin son públicas (ej. "/", "/contacto", etc.)
-  }
-
-  // Buscar el prefijo más específico que coincida
   const matchedPath = Object.keys(routePermissions).find((path) =>
     pathname.startsWith(path),
   );
 
-  // Si la ruta no está en el mapa de permisos, denegar acceso (evita agujeros de seguridad)
   if (!matchedPath) {
-    return false;
+    return true;
   }
 
-  const allowedRoles = routePermissions[matchedPath];
-  return allowedRoles.includes(role);
+  return routePermissions[matchedPath].includes(role);
 }
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-
-  // 📌 Rutas públicas (sin autenticación)
-  const publicPaths = ["/api/auth/login", "/api/auth/register"];
-  const isPublic = publicPaths.some((path) => pathname.startsWith(path));
-
-  if (isPublic) {
-    return NextResponse.next();
-  }
-
   const token = req.cookies.get("session")?.value;
 
-  if (!token) {
-    const loginUrl = new URL("/login", req.url);
-    if (pathname !== "/") {
-      loginUrl.searchParams.set("from", pathname);
+  const isRoot = pathname === "/";
+  const isLogin = pathname === "/admin" || pathname.startsWith("/admin/");
+  const isWorkspace = pathname.startsWith("/workspace");
+
+  // Raíz pública
+  if (isRoot) {
+    if (!token) return NextResponse.next();
+
+    try {
+      const payload = await verifyToken(token);
+      return NextResponse.redirect(
+        new URL(getDefaultRedirectForRole(payload.role), req.url),
+      );
+    } catch {
+      const res = NextResponse.next();
+      res.cookies.delete("session");
+      return res;
     }
-    return NextResponse.redirect(loginUrl);
   }
 
-  try {
-    const payload = await verifyToken(token);
-    const userRole = payload.role;
+  // Login público
+  if (isLogin) {
+    if (!token) return NextResponse.next();
 
-    // 3️⃣ Ruta raíz: redirigir al dashboard según rol
-    if (pathname === "/") {
-      const defaultRoute = getDefaultRedirectForRole(userRole);
-      return NextResponse.redirect(new URL(defaultRoute, req.url));
+    try {
+      const payload = await verifyToken(token);
+      return NextResponse.redirect(
+        new URL(getDefaultRedirectForRole(payload.role), req.url),
+      );
+    } catch {
+      const res = NextResponse.next();
+      res.cookies.delete("session");
+      return res;
     }
-
-    // 4️⃣ Verificar acceso a la ruta solicitada
-    const allowed = hasAccess(pathname, userRole);
-
-    if (!allowed) {
-      // Si no tiene permiso, redirigir a su ruta por defecto
-      const defaultRoute = getDefaultRedirectForRole(userRole);
-      return NextResponse.redirect(new URL(defaultRoute, req.url));
-    }
-
-    // 5️⃣ Acceso permitido
-    return NextResponse.next();
-  } catch {
-    // Token inválido o expirado
-    const response = NextResponse.redirect(new URL("/login", req.url));
-    response.cookies.delete("session");
-    return response;
   }
+
+  // Zona protegida
+  if (isWorkspace) {
+    if (!token) {
+      return NextResponse.redirect(new URL("/admin", req.url));
+    }
+
+    try {
+      const payload = await verifyToken(token);
+
+      // Si entra a /workspace, lo mandamos a su ruta por defecto
+      if (pathname === "/workspace") {
+        return NextResponse.redirect(
+          new URL(getDefaultRedirectForRole(payload.role), req.url),
+        );
+      }
+
+      if (!hasAccess(pathname, payload.role)) {
+        return NextResponse.redirect(
+          new URL(getDefaultRedirectForRole(payload.role), req.url),
+        );
+      }
+
+      return NextResponse.next();
+    } catch {
+      const res = NextResponse.redirect(new URL("/admin", req.url));
+      res.cookies.delete("session");
+      return res;
+    }
+  }
+
+  return NextResponse.next();
 }
 
-// 🧩 Configuración del matcher (excluye assets estáticos)
 export const config = {
   matcher: [
-    /*
-     * Coincide con todas las rutas excepto:
-     * - _next/static (archivos estáticos)
-     * - _next/image (optimización de imágenes)
-     * - favicon.ico
-     * - archivos con extensión (opcional, para no interceptar assets)
-     */
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
