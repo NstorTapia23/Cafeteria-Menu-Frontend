@@ -46,7 +46,7 @@ export async function createItemMenu(item: ItemType) {
 }
 
 export async function getAllItems() {
-  return db
+  const result = await db
     .select({
       id: items.id,
       name: items.name,
@@ -59,6 +59,8 @@ export async function getAllItems() {
       prices,
       and(eq(items.id, prices.itemId), isNull(prices.validTo)),
     );
+  console.log(result);
+  return result;
 }
 
 export async function updateItem(itemUpdate: UpdateItemSchema) {
