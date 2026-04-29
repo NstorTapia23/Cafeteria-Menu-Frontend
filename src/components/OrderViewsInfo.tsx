@@ -42,7 +42,7 @@ import {
 interface MenuItem {
   id: number;
   name: string;
-  price: number;
+  price: number | string | null;
 }
 
 type OrderItemRowProps = {
@@ -142,7 +142,7 @@ const OrderItemRow = memo(function OrderItemRow({
           ${unitPrice.toFixed(2)} c/u
         </p>
         <p className="text-xs text-muted-foreground">
-          Total ítem: ${item.totalAmount.toFixed(2)}
+          Total ítem: ${Number(item.totalAmount ?? 0).toFixed(2)}
         </p>
       </div>
 
@@ -249,10 +249,11 @@ export default function OrderDetailClient({
   menuItems: MenuItem[];
 }) {
   const router = useRouter();
+
   const [items, setItems] = useState<OrderItem[]>(initialItems);
-  const [selectedMenuItemId, setSelectedMenuItemId] = useState<string>(
-    menuItems[0]?.id.toString() ?? "",
-  );
+  const [selectedMenuItemId, setSelectedMenuItemId] = useState<string>(() => {
+    return menuItems[0]?.id.toString() ?? "";
+  });
 
   const [editingItemId, setEditingItemId] = useState<number | null>(null);
   const [draftQuantity, setDraftQuantity] = useState<number>(1);
@@ -260,30 +261,41 @@ export default function OrderDetailClient({
   const [addingItem, setAddingItem] = useState(false);
   const [closingOrder, setClosingOrder] = useState(false);
   const [busyItemId, setBusyItemId] = useState<number | null>(null);
-
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
 
   const itemsRef = useRef(items);
+
   useEffect(() => {
     itemsRef.current = items;
   }, [items]);
 
+  const normalizedMenuItems = useMemo(
+    () =>
+      menuItems.map((item) => ({
+        ...item,
+        price: Number(item.price ?? 0),
+      })),
+    [menuItems],
+  );
+
   const menuItemsById = useMemo(() => {
-    return new Map(menuItems.map((item) => [item.id, item] as const));
-  }, [menuItems]);
+    return new Map(normalizedMenuItems.map((item) => [item.id, item] as const));
+  }, [normalizedMenuItems]);
 
   const total = useMemo(
-    () => items.reduce((sum, item) => sum + item.totalAmount, 0),
+    () => items.reduce((sum, item) => sum + Number(item.totalAmount ?? 0), 0),
     [items],
   );
 
   const selectedMenuItem = useMemo(() => {
+    if (!selectedMenuItemId) return undefined;
     const id = Number(selectedMenuItemId);
+    if (Number.isNaN(id)) return undefined;
     return menuItemsById.get(id);
   }, [selectedMenuItemId, menuItemsById]);
 
   const getUnitPrice = useCallback((item: OrderItem) => {
-    return item.cantidad > 0 ? item.totalAmount / item.cantidad : 0;
+    return item.cantidad > 0 ? Number(item.totalAmount) / item.cantidad : 0;
   }, []);
 
   const closeQuantityEditor = useCallback(() => {
@@ -357,7 +369,10 @@ export default function OrderDetailClient({
   );
 
   const addItemHandler = useCallback(async () => {
-    if (!selectedMenuItem) return;
+    if (!selectedMenuItem) {
+      toast.error("Selecciona un item válido");
+      return;
+    }
 
     const selectedId = selectedMenuItem.id;
     const existingPendingItem = itemsRef.current.find(
@@ -402,6 +417,7 @@ export default function OrderDetailClient({
       toast.success("Orden cerrada");
       setCloseDialogOpen(false);
       router.replace("/admin/workspace/orders");
+      router.refresh();
     } catch (error) {
       toast.error("Error al procesar la petición");
       console.error(error);
@@ -444,16 +460,17 @@ export default function OrderDetailClient({
                 Agregar items
               </label>
               <Select
-                value={selectedMenuItemId}
+                value={selectedMenuItemId || undefined}
                 onValueChange={setSelectedMenuItemId}
+                disabled={normalizedMenuItems.length === 0}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Seleccionar item" />
                 </SelectTrigger>
                 <SelectContent>
-                  {menuItems.map((item) => (
+                  {normalizedMenuItems.map((item) => (
                     <SelectItem key={item.id} value={item.id.toString()}>
-                      {item.name} - ${item.price.toFixed(2)}
+                      {item.name} - ${Number(item.price).toFixed(2)}
                     </SelectItem>
                   ))}
                 </SelectContent>
