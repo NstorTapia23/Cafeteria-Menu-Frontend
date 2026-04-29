@@ -1,9 +1,8 @@
-import { getOpenOrders } from "@/repositories/orders";
 import OrdersAndPendsClient from "@/components/OrdersAndPendsClient";
-import { getOrderItemsCooked } from "./actions";
+import { getOrderItemsCooked, OrdersAction } from "./actions";
 
 export default async function OrdersPage() {
-  const ordenesAbiertas = await getOpenOrders();
+  const ordenesAbiertas = await OrdersAction();
   const orderItemsCooked = await getOrderItemsCooked();
   return (
     <OrdersAndPendsClient
