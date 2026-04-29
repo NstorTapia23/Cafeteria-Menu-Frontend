@@ -119,6 +119,9 @@ export async function CloseOrderById(orderId: number) {
       orderId,
     });
 
+    revalidatePath("/admin/workspace/orders");
+    revalidatePath(`/admin/workspace/orders/${orderId}`);
+
     return { ok: true as const };
   } catch (err) {
     console.error(err);
