@@ -19,7 +19,7 @@ export async function createOrder(formData: FormData) {
   try {
     await CreateNewOrder(validated.data.workerId, validated.data.numberTable);
 
-    revalidatePath("/orders");
+    revalidatePath("/admin/workspace/orders");
     return { success: true };
   } catch (error) {
     console.error("Error al crear orden:", error);
