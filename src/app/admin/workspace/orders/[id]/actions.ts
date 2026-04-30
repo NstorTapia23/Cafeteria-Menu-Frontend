@@ -1,4 +1,5 @@
 "use server";
+
 import { getOrderItemContextById } from "@/repositories/orderItems.realtime";
 import {
   closeOrder,
@@ -37,7 +38,8 @@ export async function updateQuantity(formData: FormData) {
 
   const result = await updateOrderItemQuantity(validated);
 
-  publishOrderItemsEvent({
+  // 🔁 Ahora esperamos a que el evento se publique en Redis
+  await publishOrderItemsEvent({
     type: result.deleted ? "item-deleted" : "item-updated",
     orderId: context.orderId,
     itemId: context.itemId,
@@ -61,7 +63,8 @@ async function updateStatusInternal(
   const validated = updateOrderItemStatusSchema.parse({ id, status });
   await updateOrderItemStatus(validated);
 
-  publishOrderItemsEvent({
+  // 🔁 Publicación asíncrona
+  await publishOrderItemsEvent({
     type: "item-updated",
     orderId: context.orderId,
     itemId: context.itemId,
@@ -99,7 +102,8 @@ export async function addItem(formData: FormData): Promise<OrderItem[]> {
 
   const created = await createOrderItem(validated);
 
-  publishOrderItemsEvent({
+  // 🔁 Publicación asíncrona
+  await publishOrderItemsEvent({
     type: "item-created",
     orderId: created.orderId,
     itemId: created.itemId,
@@ -114,7 +118,7 @@ export async function CloseOrderById(orderId: number) {
   try {
     await closeOrder(orderId);
 
-    publishOrderItemsEvent({
+    await publishOrderItemsEvent({
       type: "order-closed",
       orderId,
     });
