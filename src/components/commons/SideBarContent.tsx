@@ -18,9 +18,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-import { LayoutDashboard, Package, Settings, LogOut, User } from "lucide-react";
+import { LayoutDashboard, Package, Settings, LogOut } from "lucide-react";
 
-// Definición de los elementos de navegación
 interface NavItem {
   title: string;
   href: string;
@@ -55,7 +54,6 @@ interface SidebarContentProps {
   onNavigate?: () => void;
 }
 
-// Componente memoizado para cada item de navegación
 const NavItemLink = React.memo(function NavItemLink({
   item,
   isActive,
@@ -90,7 +88,6 @@ export function SidebarContent({
   const pathname = usePathname();
   const userRole = user?.role || "";
 
-  // Memoizar elementos de navegación visibles según rol
   const visibleNavItems = React.useMemo(() => {
     return allNavItems.filter((item) => {
       if (!item.roles) return true;
@@ -98,7 +95,6 @@ export function SidebarContent({
     });
   }, [userRole]);
 
-  // Memoizar el estado activo de cada ruta para evitar recálculos
   const isActiveMap = React.useMemo(() => {
     const map = new Map<string, boolean>();
     visibleNavItems.forEach((item) => {
@@ -110,14 +106,12 @@ export function SidebarContent({
     return map;
   }, [visibleNavItems, pathname]);
 
-  // Memoizar el avatar fallback
   const avatarFallback = React.useMemo(() => {
     return user?.name?.charAt(0).toUpperCase() || "U";
   }, [user?.name]);
 
   return (
     <div className="flex h-full flex-col">
-      {/* Logo / Brand */}
       <div className="flex h-16 items-center border-b border-stone-200 px-4">
         <div className="relative h-12 w-12 shrink-0">
           <Image
@@ -127,16 +121,13 @@ export function SidebarContent({
             sizes="48px"
             className="object-contain"
             priority
-            placeholder="blur"
-            blurDataURL="data:image/webp;base64,..."
           />
         </div>
-        <span className="text-lg md:text-xl font-semibold text-stone-800">
+        <span className="text-lg font-semibold text-stone-800 md:text-xl">
           Hotel Santiago Habana
         </span>
       </div>
 
-      {/* Navegación */}
       <nav className="flex-1 space-y-1 px-3 py-4">
         {visibleNavItems.map((item) => (
           <NavItemLink
@@ -148,7 +139,6 @@ export function SidebarContent({
         ))}
       </nav>
 
-      {/* Sección de usuario (pie de sesión) */}
       <div className="border-t border-stone-200 p-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -161,29 +151,21 @@ export function SidebarContent({
                   {avatarFallback}
                 </AvatarFallback>
               </Avatar>
+
               <div className="flex flex-1 flex-col items-start text-left">
                 <span className="text-sm font-medium text-stone-800">
                   {user?.name || "Usuario"}
                 </span>
-                <span className="text-xs text-stone-500 capitalize">
+                <span className="text-xs capitalize text-stone-500">
                   {user?.role || "Invitado"}
                 </span>
               </div>
             </Button>
           </DropdownMenuTrigger>
+
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>Mi cuenta</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link
-                href="/admin/profile"
-                className="flex items-center"
-                onClick={onNavigate}
-              >
-                <User className="mr-2 h-4 w-4" />
-                Perfil
-              </Link>
-            </DropdownMenuItem>
             <DropdownMenuItem onClick={onLogout} className="text-red-600">
               <LogOut className="mr-2 h-4 w-4" />
               Cerrar sesión

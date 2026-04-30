@@ -1,9 +1,11 @@
 import { db } from "@/db";
 import { createItemSchema } from "@/schemas/ItemsSchemas";
-import z from "zod";
+import z, { date } from "zod";
 import { items, prices } from "@/db/schema";
 import { eq, isNull, and } from "drizzle-orm";
-import type { UpdateItemSchema } from "@/schemas/ItemsSchemas";
+import type { UpdateItemType } from "@/schemas/ItemsSchemas";
+import { Select } from "radix-ui";
+import { toast } from "sonner";
 type ItemType = z.infer<typeof createItemSchema>;
 
 export async function createItemMenu(item: ItemType) {
@@ -53,17 +55,17 @@ export async function getAllItems() {
       description: items.description,
       url: items.imageUrl,
       price: prices.amount,
+      elaborationArea: items.elaborationArea
     })
     .from(items)
     .innerJoin(
       prices,
       and(eq(items.id, prices.itemId), isNull(prices.validTo)),
     );
-  console.log(result);
   return result;
 }
-
-export async function updateItem(itemUpdate: UpdateItemSchema) {
+//actualizar items
+export async function updateItem(itemUpdate: UpdateItemType) {
   return await db.transaction(async (tx) => {
     const existingItem = await tx.query.items.findFirst({
       where: eq(items.id, itemUpdate.id),
@@ -76,36 +78,78 @@ export async function updateItem(itemUpdate: UpdateItemSchema) {
     const [updatedItem] = await tx
       .update(items)
       .set({
-        name: itemUpdate.name,
-        description: itemUpdate.description,
-        elaborationArea: itemUpdate.elaborationArea,
+        name: itemUpdate.name ?? existingItem.name,
+        description:
+          itemUpdate.description !== undefined
+            ? itemUpdate.description
+            : existingItem.description,
+        elaborationArea: itemUpdate.elaborationArea ?? existingItem.elaborationArea,
+        imageUrl:
+          itemUpdate.url !== undefined ? itemUpdate.url : existingItem.imageUrl,
       })
       .where(eq(items.id, itemUpdate.id))
       .returning();
 
-    // 3. Manejar precio si se proporcionó
+    if (!updatedItem) {
+      throw new Error("No se pudo actualizar el ítem");
+    }
+
+    let activePrice = await tx.query.prices.findFirst({
+      where: and(eq(prices.itemId, itemUpdate.id), isNull(prices.validTo)),
+    });
+
     if (itemUpdate.price !== undefined) {
-      // Expirar el precio activo actual
       await tx
         .update(prices)
         .set({ validTo: new Date() })
         .where(and(eq(prices.itemId, itemUpdate.id), isNull(prices.validTo)));
 
-      // Insertar el nuevo precio como activo
-      await tx.insert(prices).values({
-        itemId: itemUpdate.id,
-        amount: itemUpdate.price,
-        validFrom: new Date(),
+      const [insertedPrice] = await tx
+        .insert(prices)
+        .values({
+          itemId: itemUpdate.id,
+          amount: itemUpdate.price,
+          validFrom: new Date(),
+          validTo: null,
+        })
+        .returning();
+
+      activePrice = insertedPrice ?? activePrice;
+    }
+
+    if (!activePrice) {
+      activePrice = await tx.query.prices.findFirst({
+        where: and(eq(prices.itemId, itemUpdate.id), isNull(prices.validTo)),
       });
     }
 
-    const activePrice = await tx.query.prices.findFirst({
-      where: and(eq(prices.itemId, itemUpdate.id), isNull(prices.validTo)),
-    });
-
     return {
       ...updatedItem,
-      activePrice: activePrice,
+      activePrice,
     };
+  });
+}
+
+//eliminacion parcial de items
+export async function SoftDeleteItem(id: number) {
+  await db.transaction(async (tx) => {
+    const rows = await tx
+      .select()
+      .from(items)
+      .where(and(eq(items.id, id), eq(items.is_active, true)));
+
+    if (rows.length === 0) {
+      throw new Error("No es posible eliminar el elemento ya que este no existe o ya está inactivo");
+    }
+
+    await tx
+      .update(items)
+      .set({ is_active: false })
+      .where(eq(items.id, id));
+
+    await tx
+      .update(prices)
+      .set({ validTo: new Date() })
+      .where(eq(prices.itemId, id));
   });
 }

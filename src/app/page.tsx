@@ -10,7 +10,8 @@ type MenuInfoType = {
   name: string;
   description: string | null;
   url: string | null;
-  price: number;
+  price: number
+  elaborationArea: "lunch" | "cocina" | "bar"
 };
 
 export default function Home() {

@@ -19,7 +19,7 @@ export const updateItemSchema = z.object({
   elaborationArea: z.enum(["cocina", "bar", "lunch"]).optional(),
 });
 
-export type UpdateItemSchema = z.infer<typeof updateItemSchema>;
+export type UpdateItemType = z.infer<typeof updateItemSchema>;
 
 export const getItemsForOrderItems = z.object({
   id: z.number().int().positive(),

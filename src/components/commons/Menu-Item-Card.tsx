@@ -1,3 +1,4 @@
+// src/components/commons/Menu-Item-Card.tsx
 "use client";
 
 import * as React from "react";
@@ -6,33 +7,49 @@ import { ImageOff } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-type MenuInfoType = {
+export type MenuInfoType = {
   id: number;
   name: string;
   description: string | null;
   url: string | null;
   price: number;
+  elaborationArea: "cocina" | "bar" | "lunch";
 };
 
 interface MenuItemCardProps {
   item: MenuInfoType;
   className?: string;
+  onClick?: (item: MenuInfoType) => void;
 }
 
-export function MenuItemCard({ item, className }: MenuItemCardProps) {
+export function MenuItemCard({
+  item,
+  className,
+  onClick,
+}: MenuItemCardProps) {
   const [imageError, setImageError] = React.useState(false);
   const showImage = Boolean(item.url) && !imageError;
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onClick?.(item);
+    }
+  };
+
   return (
     <Card
+      role="button"
+      tabIndex={0}
+      onClick={() => onClick?.(item)}
+      onKeyDown={handleKeyDown}
       className={cn(
-        "w-full rounded-xl shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1",
+        "w-full cursor-pointer rounded-xl shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary",
         className,
       )}
     >
       <div className="flex items-center gap-4 p-4">
-        {/* Imagen */}
-        <div className="relative h-16 w-16 sm:h-20 sm:w-20 flex-shrink-0 overflow-hidden rounded-lg bg-muted">
+        <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-muted sm:h-20 sm:w-20">
           {showImage ? (
             <Image
               src={item.url as string}
@@ -50,7 +67,6 @@ export function MenuItemCard({ item, className }: MenuItemCardProps) {
           )}
         </div>
 
-        {/* Contenido */}
         <div className="flex min-w-0 flex-1 flex-col">
           <h3 className="truncate text-sm font-semibold">{item.name}</h3>
 
@@ -61,7 +77,9 @@ export function MenuItemCard({ item, className }: MenuItemCardProps) {
           )}
 
           <div className="mt-3 flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">Disponible</span>
+            <span className="text-xs text-muted-foreground">
+              {item.elaborationArea}
+            </span>
 
             <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
               ${item.price.toFixed(2)}

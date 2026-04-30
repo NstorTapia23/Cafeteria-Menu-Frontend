@@ -1,8 +1,11 @@
+// src/app/actions.ts
 "use server";
 
 import { db } from "@/db";
 import { items, prices } from "@/db/schema";
-import { createItemSchema } from "@/schemas/ItemsSchemas";
+import { SoftDeleteItem, updateItem } from "@/repositories/items";
+import { createItemSchema, updateItemSchema } from "@/schemas/ItemsSchemas";
+import { revalidatePath } from "next/cache";
 
 export type ItemType = {
   name: string;
@@ -43,6 +46,8 @@ export async function createItemMenu(item: ItemType) {
       .returning();
 
     if (!newPrice[0]) throw new Error("No se pudo crear el precio");
+
+    revalidatePath("/admin/workspace/dashboard/menu");
 
     return {
       item: newItem[0],
@@ -92,6 +97,7 @@ async function uploadImageToCloudinary(file: File) {
 
   return buildWebpUrl(data.public_id);
 }
+
 export async function createItemWithImageAction(formData: FormData) {
   const rawValues = {
     name: String(formData.get("name") ?? ""),
@@ -125,4 +131,87 @@ export async function createItemWithImageAction(formData: FormData) {
     ...validated.data,
     url: imageUrl ?? null,
   });
+}
+
+export async function updateItemWithImageAction(formData: FormData) {
+  const id = Number(formData.get("id"));
+  const name = String(formData.get("name") ?? "").trim();
+  const descriptionRaw = String(formData.get("description") ?? "").trim();
+  const elaborationArea = String(formData.get("elaborationArea") ?? "").trim();
+  const priceRaw = String(formData.get("price") ?? "").trim();
+  const urlRaw = String(formData.get("url") ?? "").trim();
+
+  if (!Number.isInteger(id) || id <= 0) {
+    throw new Error("ID inválido");
+  }
+
+  if (!name) {
+    throw new Error("El nombre es obligatorio");
+  }
+
+  if (!elaborationArea) {
+    throw new Error("El área de elaboración es obligatoria");
+  }
+
+  const allowedAreas = ["cocina", "bar", "lunch"] as const;
+  if (!allowedAreas.includes(elaborationArea as (typeof allowedAreas)[number])) {
+    throw new Error("El área de elaboración no es válida");
+  }
+
+  const price =
+    priceRaw.length > 0 ? Number(priceRaw) : undefined;
+
+  if (price !== undefined && Number.isNaN(price)) {
+    throw new Error("El precio no es válido");
+  }
+
+  const file = formData.get("image");
+  let imageUrl: string | null | undefined = undefined;
+
+  if (file instanceof File && file.size > 0) {
+    if (!file.type.startsWith("image/")) {
+      throw new Error("El archivo debe ser una imagen");
+    }
+    imageUrl = await uploadImageToCloudinary(file);
+  } else if (urlRaw.length > 0) {
+    imageUrl = urlRaw;
+  }
+
+  const validated = updateItemSchema.safeParse({
+    id,
+    name,
+    description: descriptionRaw.length > 0 ? descriptionRaw : null,
+    url: imageUrl,
+    price,
+    elaborationArea: elaborationArea as "cocina" | "bar" | "lunch",
+  });
+
+  if (!validated.success) {
+    throw new Error(validated.error.message);
+  }
+
+  const result = await updateItem(validated.data);
+
+  revalidatePath("/admin/workspace/dashboard/menu");
+
+  return {
+    item: {
+      id: result.id,
+      name: result.name,
+      description: result.description,
+      url: result.imageUrl ?? null,
+      price: result.activePrice?.amount ?? validated.data.price ?? 0,
+      elaborationArea: result.elaborationArea,
+    },
+  };
+}
+
+export async function DeleteItemAction(itemId: number) {
+  try {
+    await SoftDeleteItem(itemId);
+
+    revalidatePath("/admin/workspace/dashboard/menu");
+  } catch (err) {
+    throw new Error("Algo ha ido mal eliminando el elemento: " + err);
+  }
 }
