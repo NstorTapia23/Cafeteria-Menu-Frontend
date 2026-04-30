@@ -77,8 +77,8 @@ export function MenuItemCard({
           )}
 
           <div className="mt-3 flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">
-              {item.elaborationArea}
+            <span className="text-xs font-medium text-green-600">
+              Disponible
             </span>
 
             <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
