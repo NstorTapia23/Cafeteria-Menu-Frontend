@@ -1,4 +1,3 @@
-// @/components/commons/newItemForm.tsx
 "use client";
 
 import { useState } from "react";
@@ -82,7 +81,7 @@ export default function CreateItemPage({
       setImageFile(null);
 
       router.refresh();
-      onSuccess?.(); // cierra el Sheet después de crear
+      onSuccess?.();
     } catch (error) {
       console.error("Error al crear item:", error);
       toast.error("Error al crear el item", {
@@ -93,104 +92,110 @@ export default function CreateItemPage({
   }
 
   return (
-    // Sin Card, sólo un contenedor con padding mínimo
-    <div className="py-2">
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        <div className="space-y-2">
-          <Label htmlFor="name">Nombre</Label>
-          <Input
-            id="name"
-            placeholder="Ej: Hamburguesa Clásica"
-            className="w-full"
-            {...register("name")}
-          />
-          {errors.name && (
-            <p className="text-sm text-destructive">{errors.name.message}</p>
-          )}
-          <p className="text-sm text-muted-foreground">
-            Nombre visible para los clientes y el personal.
-          </p>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="description">Descripción (opcional)</Label>
-          <Textarea
-            id="description"
-            placeholder="Descripción del plato o bebida..."
-            className="resize-none w-full"
-            {...register("description")}
-          />
-          {errors.description && (
-            <p className="text-sm text-destructive">
-              {errors.description.message}
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="flex min-h-0 flex-1 flex-col"
+    >
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="name">Nombre</Label>
+            <Input
+              id="name"
+              placeholder="Ej: Hamburguesa Clásica"
+              className="w-full"
+              {...register("name")}
+            />
+            {errors.name && (
+              <p className="text-sm text-destructive">{errors.name.message}</p>
+            )}
+            <p className="text-sm text-muted-foreground">
+              Nombre visible para los clientes y el personal.
             </p>
-          )}
-        </div>
+          </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="price">Precio</Label>
-          <Input
-            id="price"
-            type="number"
-            step="0.01"
-            min="0"
-            placeholder="0.00"
-            className="w-full"
-            {...register("price", { valueAsNumber: true })}
-          />
-          {errors.price && (
-            <p className="text-sm text-destructive">{errors.price.message}</p>
-          )}
-          <p className="text-sm text-muted-foreground">Precio (ej: 10.99)</p>
-        </div>
+          <div className="space-y-2">
+            <Label htmlFor="description">Descripción (opcional)</Label>
+            <Textarea
+              id="description"
+              placeholder="Descripción del plato o bebida..."
+              className="w-full resize-none"
+              {...register("description")}
+            />
+            {errors.description && (
+              <p className="text-sm text-destructive">
+                {errors.description.message}
+              </p>
+            )}
+          </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="elaborationArea">Área de elaboración</Label>
-          <Select
-            value={elaborationArea}
-            onValueChange={(value) =>
-              setValue("elaborationArea", value as "cocina" | "bar" | "lunch")
-            }
-          >
-            <SelectTrigger id="elaborationArea" className="w-full">
-              <SelectValue placeholder="Selecciona un área" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="cocina">Cocina</SelectItem>
-              <SelectItem value="bar">Bar</SelectItem>
-              <SelectItem value="lunch">Lunch</SelectItem>
-            </SelectContent>
-          </Select>
-          {errors.elaborationArea && (
-            <p className="text-sm text-destructive">
-              {errors.elaborationArea.message}
+          <div className="space-y-2">
+            <Label htmlFor="price">Precio</Label>
+            <Input
+              id="price"
+              type="number"
+              step="0.01"
+              min="0"
+              placeholder="0.00"
+              className="w-full"
+              {...register("price", { valueAsNumber: true })}
+            />
+            {errors.price && (
+              <p className="text-sm text-destructive">{errors.price.message}</p>
+            )}
+            <p className="text-sm text-muted-foreground">Precio (ej: 10.99)</p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="elaborationArea">Área de elaboración</Label>
+            <Select
+              value={elaborationArea}
+              onValueChange={(value) =>
+                setValue("elaborationArea", value as "cocina" | "bar" | "lunch")
+              }
+            >
+              <SelectTrigger id="elaborationArea" className="w-full">
+                <SelectValue placeholder="Selecciona un área" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="cocina">Cocina</SelectItem>
+                <SelectItem value="bar">Bar</SelectItem>
+                <SelectItem value="lunch">Lunch</SelectItem>
+              </SelectContent>
+            </Select>
+            {errors.elaborationArea && (
+              <p className="text-sm text-destructive">
+                {errors.elaborationArea.message}
+              </p>
+            )}
+            <p className="text-sm text-muted-foreground">
+              Determina dónde se preparará este item.
             </p>
-          )}
-          <p className="text-sm text-muted-foreground">
-            Determina dónde se preparará este item.
-          </p>
-        </div>
+          </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="image">Imagen del item</Label>
-          <Input
-            id="image"
-            type="file"
-            accept="image/*"
-            className="w-full"
-            onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
-          />
-          <p className="text-sm text-muted-foreground">
-            La imagen se subirá automáticamente al crear el item.
-          </p>
-          {imageFile && (
-            <p className="text-sm text-green-600">
-              Imagen seleccionada: {imageFile.name}
+          <div className="space-y-2">
+            <Label htmlFor="image">Imagen del item</Label>
+            <Input
+              id="image"
+              type="file"
+              accept="image/*"
+              className="w-full"
+              onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
+            />
+            <p className="text-sm text-muted-foreground">
+              La imagen se subirá automáticamente al crear el item.
             </p>
-          )}
+            {imageFile && (
+              <p className="text-sm text-green-600">
+                Imagen seleccionada: {imageFile.name}
+              </p>
+            )}
+          </div>
         </div>
+      </div>
 
-        <div className="flex justify-end gap-3">
+      <div className="sticky bottom-0 border-t bg-background px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6">
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <Button
             type="button"
             variant="outline"
@@ -201,14 +206,16 @@ export default function CreateItemPage({
                 router.back();
               }
             }}
+            className="w-full sm:w-auto"
           >
             Cancelar
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
+
+          <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
             {isSubmitting ? "Creando..." : "Crear item"}
           </Button>
         </div>
-      </form>
-    </div>
+      </div>
+    </form>
   );
 }

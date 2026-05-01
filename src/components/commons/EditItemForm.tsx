@@ -47,7 +47,7 @@ export default function EditItemForm({
   }, [item]);
 
   return (
-    <form onSubmit={onSubmit} className="flex h-full flex-col">
+    <form onSubmit={onSubmit} className="flex flex-1 flex-col">
       <div className="border-b px-4 py-4 sm:px-6">
         <h2 className="text-lg font-semibold">Editar elemento</h2>
       </div>
