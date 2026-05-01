@@ -34,7 +34,6 @@ export function useElaborationItems(area: ElaborationArea) {
   }, [area]);
 
   useEffect(() => {
-    // Carga inicial
     fetchData();
 
     // Suscripción a canal de Supabase

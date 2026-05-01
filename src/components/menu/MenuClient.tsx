@@ -10,6 +10,7 @@ type MenuInfoType = {
   description: string | null;
   url: string | null;
   price: number;
+  elaborationArea: "cocina" | "bar" | "lunch"
 };
 
 export default function MenuClient({ items }: { items: MenuInfoType[] }) {
