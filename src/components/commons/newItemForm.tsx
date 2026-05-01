@@ -21,12 +21,19 @@ import { Label } from "@/components/ui/label";
 import { createItemSchema, type CreateItemInput } from "@/schemas/ItemsSchemas";
 import { createItemWithImageAction } from "@/app/admin/workspace/dashboard/menu/actions";
 
+export type ItemCategoryType = {
+  id: number;
+  name: string;
+};
+
 interface CreateItemPageProps {
+  categories: ItemCategoryType[];
   onSuccess?: () => void;
   onCancel?: () => void;
 }
 
 export default function CreateItemPage({
+  categories,
   onSuccess,
   onCancel,
 }: CreateItemPageProps) {
@@ -45,6 +52,7 @@ export default function CreateItemPage({
     defaultValues: {
       name: "",
       description: "",
+      itemCategory: undefined as unknown as number,
       price: 0,
       elaborationArea: "cocina",
       url: null,
@@ -52,6 +60,7 @@ export default function CreateItemPage({
   });
 
   const elaborationArea = watch("elaborationArea");
+  const itemCategory = watch("itemCategory");
 
   async function onSubmit(values: CreateItemInput) {
     try {
@@ -60,6 +69,7 @@ export default function CreateItemPage({
       formData.append("description", values.description ?? "");
       formData.append("price", String(values.price));
       formData.append("elaborationArea", values.elaborationArea);
+      formData.append("itemCategory", String(values.itemCategory));
 
       if (imageFile) {
         formData.append("image", imageFile);
@@ -74,6 +84,7 @@ export default function CreateItemPage({
       reset({
         name: "",
         description: "",
+        itemCategory: undefined as unknown as number,
         price: 0,
         elaborationArea: "cocina",
         url: null,
@@ -130,6 +141,38 @@ export default function CreateItemPage({
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="itemCategory">Categoría</Label>
+            <Select
+              value={itemCategory ? String(itemCategory) : ""}
+              onValueChange={(value) =>
+                setValue("itemCategory", Number(value), {
+                  shouldValidate: true,
+                  shouldDirty: true,
+                })
+              }
+            >
+              <SelectTrigger id="itemCategory" className="w-full">
+                <SelectValue placeholder="Selecciona una categoría" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((category) => (
+                  <SelectItem key={category.id} value={String(category.id)}>
+                    {category.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.itemCategory && (
+              <p className="text-sm text-destructive">
+                {errors.itemCategory.message}
+              </p>
+            )}
+            <p className="text-sm text-muted-foreground">
+              Define la categoría del item para el filtro del menú.
+            </p>
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="price">Precio</Label>
             <Input
               id="price"
@@ -151,7 +194,10 @@ export default function CreateItemPage({
             <Select
               value={elaborationArea}
               onValueChange={(value) =>
-                setValue("elaborationArea", value as "cocina" | "bar" | "lunch")
+                setValue("elaborationArea", value as "cocina" | "bar" | "lunch", {
+                  shouldValidate: true,
+                  shouldDirty: true,
+                })
               }
             >
               <SelectTrigger id="elaborationArea" className="w-full">
@@ -211,7 +257,11 @@ export default function CreateItemPage({
             Cancelar
           </Button>
 
-          <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
+          <Button
+            type="submit"
+            disabled={isSubmitting || categories.length === 0}
+            className="w-full sm:w-auto"
+          >
             {isSubmitting ? "Creando..." : "Crear item"}
           </Button>
         </div>

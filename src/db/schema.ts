@@ -9,9 +9,9 @@ import {
   timestamp,
   boolean,
   uniqueIndex,
+  index,
 } from "drizzle-orm/pg-core";
 import { UserRole } from "@/types/roles";
-
 export const workerRole = pgEnum("worker_role", [
   UserRole.DEPENDIENTE as string,
   UserRole.BARTENDER as string,
@@ -47,14 +47,23 @@ export const workers = pgTable("workers", {
   delete_at: timestamp({ withTimezone: true }),
 });
 
+export const items_categories = pgTable("items_categories" , {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  name: varchar("name" , {length: 255}).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+})
 export const items = pgTable("items", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
   description: varchar("description", { length: 500 }),
+  categoryId: integer("category_id").notNull().references(() => items_categories.id),
   elaborationArea: elaborationAreas("elaboration_area").notNull(),
   imageUrl: varchar("image_url", { length: 500 }),
   is_active: boolean("is_active").default(true).notNull(),
-});
+}, (table) => [
+  index("items_category_id_idx").on(table.categoryId),
+])
 
 export const orders = pgTable("orders", {
   id: serial("id").primaryKey(),
@@ -95,15 +104,20 @@ export const prices = pgTable(
       .where(sql`valid_to IS NULL`),
   }),
 );
-
-export const orderItems = pgTable("order_items", {
-  id: serial("id").primaryKey(),
-  orderId: integer("order_id")
-    .notNull()
-    .references(() => orders.id),
-  itemId: integer("item_id")
-    .notNull()
-    .references(() => items.id),
-  quantity: integer("quantity").notNull(),
-  status: orderItemStatus("status").notNull().default("pending"),
-});
+export const orderItems = pgTable(
+  "order_items",
+  {
+    id: serial("id").primaryKey(),
+    orderId: integer("order_id")
+      .notNull()
+      .references(() => orders.id),
+    itemId: integer("item_id")
+      .notNull()
+      .references(() => items.id),
+    quantity: integer("quantity").notNull(),
+    status: orderItemStatus("status").notNull().default("pending"),
+  },
+  (table) => [
+    index("order_items_status_idx").on(table.status),
+  ]
+);

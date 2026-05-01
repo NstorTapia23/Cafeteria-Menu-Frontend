@@ -4,18 +4,12 @@
 import { db } from "@/db";
 import { items, prices } from "@/db/schema";
 import { SoftDeleteItem, updateItem } from "@/repositories/items";
-import { createItemSchema, updateItemSchema } from "@/schemas/ItemsSchemas";
+import { CreateItemInput, createItemSchema, updateItemSchema } from "@/schemas/ItemsSchemas";
 import { revalidatePath } from "next/cache";
 
-export type ItemType = {
-  name: string;
-  description?: string;
-  url?: string | null;
-  price: number;
-  elaborationArea: "cocina" | "bar" | "lunch";
-};
 
-export async function createItemMenu(item: ItemType) {
+
+export async function createItemMenu(item: CreateItemInput) {
   const validated = createItemSchema.safeParse(item);
   if (!validated.success) {
     throw new Error(validated.error.message);
@@ -28,6 +22,7 @@ export async function createItemMenu(item: ItemType) {
         name: item.name,
         elaborationArea: item.elaborationArea,
         description: item.description,
+        categoryId: item.itemCategory,
         imageUrl: item.url || null,
         is_active: true,
       })
@@ -104,6 +99,7 @@ export async function createItemWithImageAction(formData: FormData) {
     description: String(formData.get("description") ?? ""),
     price: Number(formData.get("price") ?? 0),
     elaborationArea: String(formData.get("elaborationArea") ?? ""),
+    itemCategory: Number(formData.get("itemCategory") ?? 0), 
   };
 
   const validated = createItemSchema.safeParse({

@@ -43,6 +43,13 @@
       "when": 1777227409741,
       "tag": "0005_superb_jazinda",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1777627920864,
+      "tag": "0006_organic_winter_soldier",
+      "breakpoints": true
     }
   ]
 }

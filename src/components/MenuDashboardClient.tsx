@@ -6,7 +6,7 @@ import {
   updateItemWithImageAction,
 } from "@/app/admin/workspace/dashboard/menu/actions";
 import { DeleteItemAction } from "@/app/admin/workspace/dashboard/menu/actions";
-import CreateItemPage from "@/components/commons/newItemForm";
+import CreateItemPage, { ItemCategoryType } from "@/components/commons/newItemForm";
 import EditItemForm from "@/components/commons/EditItemForm";
 import {
   MenuItemCard,
@@ -23,11 +23,12 @@ import {
 } from "@/components/ui/sheet";
 
 import { useAuthContext } from "@/contexts/AuthContext";
-
 export default function MenuDashboardClient({
   initialItems,
+  itemCategories, 
 }: {
   initialItems: MenuInfoType[];
+  itemCategories: ItemCategoryType[]; 
 }) {
   const { isAuthenticated, user } = useAuthContext();
 
@@ -104,7 +105,7 @@ export default function MenuDashboardClient({
           </SheetHeader>
 
           <div className="flex min-h-0 flex-1 flex-col">
-            <CreateItemPage onSuccess={() => setCreateOpen(false)} />
+            <CreateItemPage onSuccess={() => setCreateOpen(false)} categories={itemCategories} />
           </div>
         </SheetContent>
       </Sheet>

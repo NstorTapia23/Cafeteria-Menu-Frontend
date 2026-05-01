@@ -1,12 +1,20 @@
 import { db } from "@/db";
-import { createItemSchema } from "@/schemas/ItemsSchemas";
-import z from "zod";
-import { items, prices } from "@/db/schema";
-import { eq, isNull, and } from "drizzle-orm";
-import type { UpdateItemType } from "@/schemas/ItemsSchemas";
-type ItemType = z.infer<typeof createItemSchema>;
+import { createItemSchema, type CreateItemInput, type UpdateItemType } from "@/schemas/ItemsSchemas";
+import { items, items_categories, prices } from "@/db/schema";
+import { asc, and, eq, isNull } from "drizzle-orm";
 
-export async function createItemMenu(item: ItemType) {
+export async function getActiveItemCategories() {
+  return await db
+    .select({
+      id: items_categories.id,
+      name: items_categories.name,
+    })
+    .from(items_categories)
+    .where(eq(items_categories.isActive, true))
+    .orderBy(asc(items_categories.name));
+}
+
+export async function createItemMenu(item: CreateItemInput) {
   const validated = createItemSchema.safeParse(item);
   if (!validated.success) {
     throw new Error(validated.error.message);
@@ -15,12 +23,24 @@ export async function createItemMenu(item: ItemType) {
   const data = validated.data;
 
   return db.transaction(async (tx) => {
+    const category = await tx.query.items_categories.findFirst({
+      where: and(
+        eq(items_categories.id, data.itemCategory),
+        eq(items_categories.isActive, true),
+      ),
+    });
+
+    if (!category) {
+      throw new Error("La categoría seleccionada no existe o está inactiva");
+    }
+
     const newItem = await tx
       .insert(items)
       .values({
         name: data.name,
         elaborationArea: data.elaborationArea,
-        description: data.description,
+        categoryId: data.itemCategory,
+        description: data.description ?? null,
         imageUrl: data.url ?? null,
         is_active: true,
       })
@@ -51,18 +71,20 @@ export async function getAllItems() {
       id: items.id,
       name: items.name,
       description: items.description,
+      categoryId: items.categoryId,
       url: items.imageUrl,
       price: prices.amount,
-      elaborationArea: items.elaborationArea
+      elaborationArea: items.elaborationArea,
     })
     .from(items)
     .innerJoin(
       prices,
       and(eq(items.id, prices.itemId), isNull(prices.validTo)),
     );
+
   return result;
 }
-//actualizar items
+
 export async function updateItem(itemUpdate: UpdateItemType) {
   return await db.transaction(async (tx) => {
     const existingItem = await tx.query.items.findFirst({
@@ -81,7 +103,12 @@ export async function updateItem(itemUpdate: UpdateItemType) {
           itemUpdate.description !== undefined
             ? itemUpdate.description
             : existingItem.description,
-        elaborationArea: itemUpdate.elaborationArea ?? existingItem.elaborationArea,
+        categoryId:
+          itemUpdate.itemCategory !== undefined
+            ? itemUpdate.itemCategory
+            : existingItem.categoryId,
+        elaborationArea:
+          itemUpdate.elaborationArea ?? existingItem.elaborationArea,
         imageUrl:
           itemUpdate.url !== undefined ? itemUpdate.url : existingItem.imageUrl,
       })
@@ -128,7 +155,6 @@ export async function updateItem(itemUpdate: UpdateItemType) {
   });
 }
 
-//eliminacion parcial de items
 export async function SoftDeleteItem(id: number) {
   await db.transaction(async (tx) => {
     const rows = await tx
@@ -137,7 +163,9 @@ export async function SoftDeleteItem(id: number) {
       .where(and(eq(items.id, id), eq(items.is_active, true)));
 
     if (rows.length === 0) {
-      throw new Error("No es posible eliminar el elemento ya que este no existe o ya está inactivo");
+      throw new Error(
+        "No es posible eliminar el elemento ya que este no existe o ya está inactivo",
+      );
     }
 
     await tx
