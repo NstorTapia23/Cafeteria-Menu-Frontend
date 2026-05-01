@@ -1,5 +1,6 @@
+import { AuthProvider } from "@/contexts/AuthContext";
 import type { ReactNode } from "react";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
-  return <div>{children}</div>;
+  return <AuthProvider>{children}</AuthProvider>
 }

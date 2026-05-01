@@ -13,7 +13,6 @@ export type MenuInfoType = {
   description: string | null;
   url: string | null;
   price: number;
-  elaborationArea: "cocina" | "bar" | "lunch";
 };
 
 interface MenuItemCardProps {

@@ -38,7 +38,6 @@ export async function updateQuantity(formData: FormData) {
 
   const result = await updateOrderItemQuantity(validated);
 
-  // 🔁 Ahora esperamos a que el evento se publique en Redis
   await publishOrderItemsEvent({
     type: result.deleted ? "item-deleted" : "item-updated",
     orderId: context.orderId,
@@ -63,7 +62,6 @@ async function updateStatusInternal(
   const validated = updateOrderItemStatusSchema.parse({ id, status });
   await updateOrderItemStatus(validated);
 
-  // 🔁 Publicación asíncrona
   await publishOrderItemsEvent({
     type: "item-updated",
     orderId: context.orderId,
@@ -102,7 +100,6 @@ export async function addItem(formData: FormData): Promise<OrderItem[]> {
 
   const created = await createOrderItem(validated);
 
-  // 🔁 Publicación asíncrona
   await publishOrderItemsEvent({
     type: "item-created",
     orderId: created.orderId,

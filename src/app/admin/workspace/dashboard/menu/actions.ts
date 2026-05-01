@@ -46,7 +46,7 @@ export async function createItemMenu(item: ItemType) {
       .returning();
 
     if (!newPrice[0]) throw new Error("No se pudo crear el precio");
-
+    revalidatePath("/");
     revalidatePath("/admin/workspace/dashboard/menu");
 
     return {
@@ -191,7 +191,7 @@ export async function updateItemWithImageAction(formData: FormData) {
   }
 
   const result = await updateItem(validated.data);
-
+  revalidatePath("/");
   revalidatePath("/admin/workspace/dashboard/menu");
 
   return {
@@ -209,8 +209,8 @@ export async function updateItemWithImageAction(formData: FormData) {
 export async function DeleteItemAction(itemId: number) {
   try {
     await SoftDeleteItem(itemId);
-
-    revalidatePath("/admin/workspace/dashboard/menu");
+  revalidatePath("/");
+  revalidatePath("/admin/workspace/dashboard/menu");
   } catch (err) {
     throw new Error("Algo ha ido mal eliminando el elemento: " + err);
   }

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { PendsForCookType } from "@/schemas/orderItemsSchemas";
+import { supabase } from "@/lib/supabase";
 
 type ElaborationArea = "bar" | "cocina" | "lunch";
 
@@ -10,7 +11,7 @@ export function useElaborationItems(area: ElaborationArea) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const esRef = useRef<EventSource | null>(null);
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -33,27 +34,32 @@ export function useElaborationItems(area: ElaborationArea) {
   }, [area]);
 
   useEffect(() => {
+    // Carga inicial
     fetchData();
 
-    const es = new EventSource(`/api/order-items/stream?area=${area}`);
-    esRef.current = es;
+    // Suscripción a canal de Supabase
+    const channel = supabase.channel("order-items").on(
+      "broadcast",
+      { event: "order-event" },
+      (payload) => {
+        // Reaccionamos a cualquier evento del pedido, recargamos datos de esta área
+        // Podrías filtrar por área, pero recargar no es costoso
+        void fetchData();
+      }
+    ).subscribe((status) => {
+      if (status === "SUBSCRIBED") {
+        // opcional: log
+      }
+      if (status === "CLOSED" || status === "CHANNEL_ERROR") {
+        setError("Se perdió la conexión en tiempo real");
+      }
+    });
 
-    const refresh = () => {
-      void fetchData();
-    };
-
-    es.addEventListener("item-created", refresh);
-    es.addEventListener("item-updated", refresh);
-    es.addEventListener("item-deleted", refresh);
-    es.addEventListener("order-closed", refresh);
-
-    es.onerror = () => {
-      setError("Se perdió la conexión en tiempo real");
-    };
+    channelRef.current = channel;
 
     return () => {
-      es.close();
-      esRef.current = null;
+      channel.unsubscribe();
+      channelRef.current = null;
     };
   }, [area, fetchData]);
 
