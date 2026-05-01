@@ -28,7 +28,7 @@ type FormState = {
   name: string;
   description: string;
   price: string;
-  elaborationArea: "cocina" | "bar" | "lunch";
+  elaborationArea: "bar" | "cocina" | "lunch"
 };
 
 export default function EditItemForm({
