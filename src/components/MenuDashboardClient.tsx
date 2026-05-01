@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 
-import { updateItemWithImageAction } from "@/app/admin/workspace/dashboard/menu/actions";
+import {
+  updateItemWithImageAction,
+} from "@/app/admin/workspace/dashboard/menu/actions";
+import { DeleteItemAction } from "@/app/admin/workspace/dashboard/menu/actions";
 import CreateItemPage from "@/components/commons/newItemForm";
 import EditItemForm from "@/components/commons/EditItemForm";
 import {
@@ -68,6 +71,23 @@ export default function MenuDashboardClient({
     }
   };
 
+  const handleDelete = async (id: number) => {
+    setEditError(null);
+    setSaving(true);
+
+    try {
+      await DeleteItemAction(id);
+
+      setItemsMenu((prev) => prev.filter((item) => item.id !== id));
+      setEditOpen(false);
+      setSelectedItem(null);
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : "Error inesperado");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-6xl p-4 sm:p-6">
       <Sheet open={createOpen} onOpenChange={setCreateOpen}>
@@ -77,7 +97,7 @@ export default function MenuDashboardClient({
 
         <SheetContent
           side="right"
-          className="w-full p-0 h-[100dvh] sm:h-[min(90vh,48rem)] sm:max-w-md flex flex-col overflow-hidden"
+          className="flex h-[100dvh] w-full flex-col overflow-hidden p-0 sm:h-[min(90vh,48rem)] sm:max-w-md"
         >
           <SheetHeader className="border-b px-4 py-4 sm:px-6">
             <SheetTitle>Nuevo elemento</SheetTitle>
@@ -98,7 +118,7 @@ export default function MenuDashboardClient({
       <Sheet open={editOpen} onOpenChange={setEditOpen}>
         <SheetContent
           side="right"
-          className="w-full p-0 h-[100dvh] sm:h-[min(90vh,48rem)] sm:max-w-xl flex flex-col overflow-hidden"
+          className="flex h-[100dvh] w-full flex-col overflow-hidden p-0 sm:h-[min(90vh,48rem)] sm:max-w-xl"
         >
           <SheetHeader className="border-b px-4 py-4 sm:px-6">
             <SheetTitle>Editar elemento del menú</SheetTitle>
@@ -109,6 +129,7 @@ export default function MenuDashboardClient({
               <EditItemForm
                 item={selectedItem}
                 onSubmit={handleUpdate}
+                onDelete={handleDelete}
                 loading={saving}
                 error={editError}
               />

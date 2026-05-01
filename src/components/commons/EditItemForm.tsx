@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { MenuInfoType } from "@/components/commons/Menu-Item-Card";
 
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ import { Separator } from "@/components/ui/separator";
 type Props = {
   item: MenuInfoType;
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => Promise<void>;
+  onDelete: (id: number) => Promise<void>;
   loading: boolean;
   error: string | null;
 };
@@ -28,15 +29,18 @@ type FormState = {
   name: string;
   description: string;
   price: string;
-  elaborationArea: "bar" | "cocina" | "lunch"
+  elaborationArea: "bar" | "cocina" | "lunch";
 };
 
 export default function EditItemForm({
   item,
   onSubmit,
+  onDelete,
   loading,
   error,
 }: Props) {
+  const [deleting, setDeleting] = useState(false);
+
   const initialForm = useMemo<FormState>(() => {
     return {
       name: item.name ?? "",
@@ -46,92 +50,129 @@ export default function EditItemForm({
     };
   }, [item]);
 
+  const handleDelete = async () => {
+    const confirmDelete = window.confirm(
+      `¿Seguro que deseas eliminar "${item.name}"?`
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      setDeleting(true);
+      await onDelete(item.id);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
-    <form onSubmit={onSubmit} className="flex flex-1 flex-col">
-      <div className="border-b px-4 py-4 sm:px-6">
+    <form
+      onSubmit={onSubmit}
+      className="flex h-full min-h-0 flex-col overflow-hidden"
+    >
+      <div className="shrink-0 border-b px-4 py-4 sm:px-6">
         <h2 className="text-lg font-semibold">Editar elemento</h2>
       </div>
 
-      <div className="flex-1 space-y-6 overflow-y-auto px-4 py-6 sm:px-6">
-        {error && (
-          <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            {error}
-          </div>
-        )}
-
-        <input type="hidden" name="id" value={item.id} />
-
-        <Card className="overflow-hidden rounded-2xl">
-          <CardContent className="p-0">
-            <div className="aspect-square w-full bg-muted sm:aspect-[4/3]">
-              {item.url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={item.url}
-                  alt={item.name}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                  Sin imagen
-                </div>
-              )}
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6">
+        <div className="space-y-6 pb-6">
+          {error && (
+            <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {error}
             </div>
-          </CardContent>
-        </Card>
+          )}
 
-        <div className="grid gap-4">
-          <div className="grid gap-2">
-            <Label>Nombre</Label>
-            <Input name="name" defaultValue={initialForm.name} />
-          </div>
+          <input type="hidden" name="id" value={item.id} />
 
-          <div className="grid gap-2">
-            <Label>Descripción</Label>
-            <Textarea
-              name="description"
-              defaultValue={initialForm.description}
-            />
-          </div>
+          <Card className="overflow-hidden rounded-2xl">
+            <CardContent className="p-0">
+              <div className="aspect-square w-full bg-muted sm:aspect-[4/3]">
+                {item.url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={item.url}
+                    alt={item.name}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                    Sin imagen
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
-          <div className="grid gap-2">
-            <Label>Precio</Label>
-            <Input
-              name="price"
-              type="number"
-              defaultValue={initialForm.price}
-            />
-          </div>
+          <div className="grid gap-4">
+            <div className="grid gap-2">
+              <Label>Nombre</Label>
+              <Input name="name" defaultValue={initialForm.name} />
+            </div>
 
-          <div className="grid gap-2">
-            <Label>Área</Label>
-            <Select
-              name="elaborationArea"
-              defaultValue={initialForm.elaborationArea}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="cocina">cocina</SelectItem>
-                <SelectItem value="bar">bar</SelectItem>
-                <SelectItem value="lunch">lunch</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+            <div className="grid gap-2">
+              <Label>Descripción</Label>
+              <Textarea
+                name="description"
+                defaultValue={initialForm.description}
+              />
+            </div>
 
-          <div className="grid gap-2">
-            <Label>Reemplazar imagen</Label>
-            <Input name="image" type="file" accept="image/*" />
+            <div className="grid gap-2">
+              <Label>Precio</Label>
+              <Input
+                name="price"
+                type="number"
+                defaultValue={initialForm.price}
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label>Área</Label>
+              <Select
+                name="elaborationArea"
+                defaultValue={initialForm.elaborationArea}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cocina">cocina</SelectItem>
+                  <SelectItem value="bar">bar</SelectItem>
+                  <SelectItem value="lunch">lunch</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-2">
+              <Label>Reemplazar imagen</Label>
+              <Input name="image" type="file" accept="image/*" />
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="border-t px-4 py-4 sm:px-6">
+      <div className="shrink-0 border-t bg-background px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6">
         <Separator className="mb-4" />
-        <Button type="submit" disabled={loading} className="w-full">
-          {loading ? "Guardando..." : "Guardar cambios"}
-        </Button>
+
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={handleDelete}
+            disabled={loading || deleting}
+            className="w-full sm:w-auto"
+          >
+            {deleting ? "Eliminando..." : "Eliminar"}
+          </Button>
+
+          <Button
+            type="submit"
+            disabled={loading || deleting}
+            className="w-full flex-1"
+          >
+            {loading ? "Guardando..." : "Guardar cambios"}
+          </Button>
+        </div>
       </div>
     </form>
   );
