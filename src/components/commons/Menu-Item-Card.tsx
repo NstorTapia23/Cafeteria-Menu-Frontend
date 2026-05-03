@@ -77,12 +77,12 @@ export function MenuItemCard({
           )}
 
           <div className="mt-3 flex items-center justify-between">
-            <span className="text-xs font-medium text-green-600">
-              Disponible
-            </span>
+           <span className="text-xs font-medium text-green-600 dark:text-green-400">
+                 Disponible
+    </span>
 
-            <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-              ${item.price.toFixed(2)}
+    <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary dark:bg-primary/20 dark:text-primary-foreground">
+               ${item.price.toFixed(2)}
             </span>
           </div>
         </div>

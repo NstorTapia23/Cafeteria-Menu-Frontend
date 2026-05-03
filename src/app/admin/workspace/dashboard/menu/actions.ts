@@ -3,6 +3,7 @@
 
 import { db } from "@/db";
 import { items, prices } from "@/db/schema";
+import { createItemCategory } from "@/repositories/categories";
 import { SoftDeleteItem, updateItem } from "@/repositories/items";
 import { CreateItemInput, createItemSchema, updateItemSchema } from "@/schemas/ItemsSchemas";
 import { revalidatePath } from "next/cache";
@@ -210,4 +211,8 @@ export async function DeleteItemAction(itemId: number) {
   } catch (err) {
     throw new Error("Algo ha ido mal eliminando el elemento: " + err);
   }
+}
+
+export async function CreateItemCategoryAction(name: string){
+  return await createItemCategory(name)
 }

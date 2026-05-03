@@ -17,9 +17,6 @@ import {
 import { publishOrderItemsEvent } from "@/lib/realtime/order-items-bus";
 import { revalidatePath } from "next/cache";
 
-export async function getItems(orderId: number): Promise<OrderItem[]> {
-  return await getOrderItemsByOrderId(orderId);
-}
 
 export async function updateQuantity(formData: FormData) {
   const id = Number(formData.get("id"));
