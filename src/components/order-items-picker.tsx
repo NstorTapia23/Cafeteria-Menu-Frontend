@@ -149,9 +149,12 @@ export function OrderItemsPicker({
           Items seleccionados: <span className="font-semibold">{totalSelected}</span>
         </p>
 
-        <Button onClick={handleSubmit} disabled={isPending || totalSelected === 0}>
-          {isPending ? "Agregando..." : "Agregar a la orden"}
-        </Button>
+        <Button
+  onClick={handleSubmit}
+  disabled={Boolean(isPending || totalSelected === 0)}
+>
+  {isPending ? "Agregando..." : "Agregar a la orden"}
+</Button>
       </div>
 
       {filteredItems.length === 0 ? (

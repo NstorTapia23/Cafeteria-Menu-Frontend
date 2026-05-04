@@ -1,7 +1,14 @@
 import { supabase } from "@/lib/supabase";
 import type { ElaborationArea } from "@/schemas/orderItemsSchemas";
-
 export type OrderItemsRealtimeEvent =
+  | {
+      type: "items-batch-created";
+      orderId: number;
+      items: {
+        itemId: number;
+        area: ElaborationArea;
+      }[];
+    }
   | {
       type: "item-created";
       orderId: number;
@@ -21,6 +28,7 @@ export type OrderItemsRealtimeEvent =
       area: ElaborationArea;
     }
   | { type: "order-closed"; orderId: number };
+  
 export async function publishOrderItemsEvent(event: OrderItemsRealtimeEvent) {
   try {
     await supabase.channel("order-items").send({

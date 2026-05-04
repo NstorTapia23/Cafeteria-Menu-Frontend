@@ -1,23 +1,54 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useReducer } from "react";
 import type { PendsForCookType } from "@/schemas/orderItemsSchemas";
 import { supabase } from "@/lib/supabase";
 
 type ElaborationArea = "bar" | "cocina" | "lunch";
 
+type State = {
+  data: PendsForCookType;
+  loading: boolean;
+  error: string | null;
+};
+
+type Action =
+  | { type: "loading" }
+  | { type: "success"; payload: PendsForCookType }
+  | { type: "error"; payload: string }
+  | { type: "clear-error" };
+
+const initialState: State = {
+  data: [],
+  loading: true,
+  error: null,
+};
+
+function reducer(state: State, action: Action): State {
+  switch (action.type) {
+    case "loading":
+      return { ...state, loading: true, error: null };
+    case "success":
+      return { data: action.payload, loading: false, error: null };
+    case "error":
+      return { ...state, loading: false, error: action.payload };
+    case "clear-error":
+      return { ...state, error: null };
+    default:
+      return state;
+  }
+}
+
 export function useElaborationItems(area: ElaborationArea) {
-  const [data, setData] = useState<PendsForCookType>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [state, dispatch] = useReducer(reducer, initialState);
 
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const load = useCallback(async (signal?: AbortSignal) => {
+    dispatch({ type: "loading" });
 
-  const fetchData = useCallback(async () => {
     try {
-      setError(null);
       const res = await fetch(`/api/order-items/pending?area=${area}`, {
         cache: "no-store",
+        signal,
       });
 
       if (!res.ok) {
@@ -25,42 +56,46 @@ export function useElaborationItems(area: ElaborationArea) {
       }
 
       const result = (await res.json()) as PendsForCookType;
-      setData(result);
+      dispatch({ type: "success", payload: result });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error desconocido");
-    } finally {
-      setLoading(false);
+      if (err instanceof DOMException && err.name === "AbortError") return;
+
+      dispatch({
+        type: "error",
+        payload: err instanceof Error ? err.message : "Error desconocido",
+      });
     }
   }, [area]);
 
   useEffect(() => {
-    fetchData();
+    const controller = new AbortController();
 
-    // Suscripción a canal de Supabase
-    const channel = supabase.channel("order-items").on(
-      "broadcast",
-      { event: "order-event" },
-      (payload) => {
-        // Reaccionamos a cualquier evento del pedido, recargamos datos de esta área
-        // Podrías filtrar por área, pero recargar no es costoso
-        void fetchData();
-      }
-    ).subscribe((status) => {
-      if (status === "SUBSCRIBED") {
-        // opcional: log
-      }
-      if (status === "CLOSED" || status === "CHANNEL_ERROR") {
-        setError("Se perdió la conexión en tiempo real");
-      }
-    });
+    void load(controller.signal);
 
-    channelRef.current = channel;
+    const channel = supabase
+      .channel("order-items")
+      .on("broadcast", { event: "order-event" }, () => {
+        void load(controller.signal);
+      })
+      .subscribe((status) => {
+        if (status === "CLOSED" || status === "CHANNEL_ERROR") {
+          dispatch({
+            type: "error",
+            payload: "Se perdió la conexión en tiempo real",
+          });
+        }
+      });
 
     return () => {
+      controller.abort();
       channel.unsubscribe();
-      channelRef.current = null;
     };
-  }, [area, fetchData]);
+  }, [load]);
 
-  return { data, loading, error, refetch: fetchData };
+  return {
+    data: state.data,
+    loading: state.loading,
+    error: state.error,
+    refetch: load,
+  };
 }
