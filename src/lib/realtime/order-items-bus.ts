@@ -21,13 +21,14 @@ export type OrderItemsRealtimeEvent =
       area: ElaborationArea;
     }
   | { type: "order-closed"; orderId: number };
-
-export async function publishOrderItemsEvent(
-  event: OrderItemsRealtimeEvent
-) {
-  await supabase.channel("order-items").send({
-    type: "broadcast",
-    event: "order-event",
-    payload: event,
-  });
+export async function publishOrderItemsEvent(event: OrderItemsRealtimeEvent) {
+  try {
+    await supabase.channel("order-items").send({
+      type: "broadcast",
+      event: "order-event",
+      payload: event,
+    });
+  } catch (err) {
+    console.error("Realtime broadcast failed:", err);
+  }
 }
