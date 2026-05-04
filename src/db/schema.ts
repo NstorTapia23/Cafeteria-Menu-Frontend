@@ -116,6 +116,7 @@ export const orderItems = pgTable(
       .references(() => items.id),
     quantity: integer("quantity").notNull(),
     status: orderItemStatus("status").notNull().default("pending"),
+    priceId: integer().notNull().references(() => prices.id)
   },
   (table) => [
     index("order_items_status_idx").on(table.status),

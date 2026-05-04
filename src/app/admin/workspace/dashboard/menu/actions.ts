@@ -214,5 +214,9 @@ export async function DeleteItemAction(itemId: number) {
 }
 
 export async function CreateItemCategoryAction(name: string){
+
+  revalidatePath("/");
+  revalidatePath("/admin/workspace/dashboard/menu");
   return await createItemCategory(name)
+
 }

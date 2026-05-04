@@ -5,9 +5,6 @@ import { revalidateTag, unstable_cache } from "next/cache";
 
 const ITEM_CATEGORIES_TAG = "item-categories";
 
-/**
- * Query base sin cache.
- */
 async function getActiveItemCategoriesQuery() {
   return await db
     .select({
@@ -19,10 +16,6 @@ async function getActiveItemCategoriesQuery() {
     .orderBy(asc(items_categories.name));
 }
 
-/**
- * Cacheada.
- * Reutiliza el resultado entre requests hasta que se invalide la tag.
- */
 export const getActiveItemCategories = unstable_cache(
   async () => {
     console.log("Hola desde la cache")
@@ -31,7 +24,7 @@ export const getActiveItemCategories = unstable_cache(
   ["active-item-categories"],
   {
     tags: [ITEM_CATEGORIES_TAG],
-    revalidate: 3600, // opcional: 1 hora
+    revalidate: 3600, 
   },
 );
 

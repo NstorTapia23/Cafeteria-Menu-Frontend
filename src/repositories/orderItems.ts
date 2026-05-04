@@ -1,5 +1,5 @@
 import { and, eq, isNull, ne, sql } from "drizzle-orm";
-import { db } from "@/db/index"; // tu conexión a la BD
+import { db } from "@/db/index"; 
 import { orderItems, items, prices, orders } from "@/db/schema";
 import z from "zod";
 import {
@@ -21,13 +21,10 @@ export async function getOrderItemsByOrderId(orderID: number) {
     })
     .from(orderItems)
     .innerJoin(items, eq(orderItems.itemId, items.id))
-    .innerJoin(prices, eq(orderItems.itemId, prices.itemId))
+    .innerJoin(prices, and(eq(orderItems.itemId, prices.itemId) , eq(orderItems.priceId , prices.id)))
     .where(
-      and(
         eq(orderItems.orderId, orderID),
-        isNull(prices.validTo), // Solo el precio actual activo
-      ),
-    );
+      );
   return result;
 }
 type UpdateOrderItemQuantity = z.infer<typeof updateOrderItemQuantitySchema>;
@@ -37,9 +34,7 @@ export async function updateOrderItemQuantity(
 ) {
   const { id, quantity: delta } = orderItemInfo;
 
-  // Transacción para leer y luego modificar/eliminar de forma atómica
   return await db.transaction(async (tx) => {
-    // 1. Obtener el ítem actual
     const currentItem = await tx.query.orderItems.findFirst({
       where: eq(orderItems.id, id),
     });
@@ -50,13 +45,11 @@ export async function updateOrderItemQuantity(
 
     const newQuantity = currentItem.quantity + delta;
 
-    // 2. Si la nueva cantidad es <= 0, eliminar el registro
     if (newQuantity <= 0) {
       await tx.delete(orderItems).where(eq(orderItems.id, id));
       return { success: true, deleted: true, id };
     }
 
-    // 3. De lo contrario, actualizar la cantidad
     await tx
       .update(orderItems)
       .set({ quantity: newQuantity })
@@ -112,7 +105,7 @@ export async function getActiveItemsWithPrice() {
     .where(
       and(
         eq(items.is_active, true),
-        isNull(prices.validTo), // solo precio actual
+        isNull(prices.validTo),
       ),
     );
 }
@@ -147,6 +140,7 @@ export async function createOrderItem(
       itemId,
       quantity,
       status: "pending",
+      priceId: priceRecord.id,
     })
     .returning();
 
