@@ -1,9 +1,11 @@
-import { and, eq, isNull, ne, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, ne, sql } from "drizzle-orm";
 import { db } from "@/db/index"; 
 import { orderItems, items, prices, orders } from "@/db/schema";
 import z from "zod";
 import {
-  createOrderItemSchema,
+  AddOrderItem,
+  AddOrderItemsInput,
+  addOrderItemsSchema,
   orderItemStatusSchema,
   updateOrderItemQuantitySchema,
   updateOrderItemStatusSchema,
@@ -109,48 +111,145 @@ export async function getActiveItemsWithPrice() {
       ),
     );
 }
-export async function createOrderItem(
-  data: z.infer<typeof createOrderItemSchema>,
-) {
-  const { orderId, itemId, quantity } = createOrderItemSchema.parse(data);
 
-  const priceRecord = await db.query.prices.findFirst({
-    where: and(eq(prices.itemId, itemId), isNull(prices.validTo)),
-  });
+function normalizeOrderItems(itemsInput: AddOrderItemsInput) {
+  const map = new Map<number, number>();
 
-  if (!priceRecord) {
-    throw new Error(`No active price found for item ${itemId}`);
+  for (const { itemId, quantity } of itemsInput) {
+    map.set(itemId, (map.get(itemId) ?? 0) + quantity);
   }
 
-  const itemRecord = await db.query.items.findFirst({
-    where: eq(items.id, itemId),
-  });
-
-  if (!itemRecord) {
-    throw new Error(`Item ${itemId} not found`);
-  }
-
-  const unitPrice = priceRecord.amount;
-  const totalAmount = unitPrice * quantity;
-
-  const [newOrderItem] = await db
-    .insert(orderItems)
-    .values({
-      orderId,
-      itemId,
-      quantity,
-      status: "pending",
-      priceId: priceRecord.id,
-    })
-    .returning();
-
-  return {
-    ...newOrderItem,
-    name: itemRecord.name,
-    totalAmount,
-    elaborationArea: itemRecord.elaborationArea,
-  };
+  return Array.from(map, ([itemId, quantity]) => ({
+    itemId,
+    quantity,
+  }));
 }
+
+function findMissing(expectedIds: number[], foundIds: number[]) {
+  const found = new Set(foundIds);
+  return expectedIds.filter((id) => !found.has(id));
+}
+
+function findDuplicates(ids: number[]) {
+  const count = new Map<number, number>();
+  for (const id of ids) {
+    count.set(id, (count.get(id) ?? 0) + 1);
+  }
+
+  return Array.from(count.entries())
+    .filter(([, qty]) => qty > 1)
+    .map(([id]) => id);
+}
+
+export async function createManyOrderItems(
+  orderId: number,
+  data: AddOrderItemsInput
+): Promise<AddOrderItem[]> {
+  const input = addOrderItemsSchema.parse(data);
+  const normalized = normalizeOrderItems(input);
+  const itemIds = normalized.map((item) => item.itemId);
+
+  return db.transaction(async (tx) => {
+    const [itemRecords, priceRecords] = await Promise.all([
+      tx
+        .select({
+          id: items.id,
+          name: items.name,
+          categoryId: items.categoryId,
+          elaborationArea: items.elaborationArea,
+        })
+        .from(items)
+        .where(inArray(items.id, itemIds)),
+
+      tx
+        .select({
+          id: prices.id,
+          itemId: prices.itemId,
+          amount: prices.amount,
+        })
+        .from(prices)
+        .where(and(inArray(prices.itemId, itemIds), isNull(prices.validTo))),
+    ]);
+
+    const missingItems = findMissing(
+      itemIds,
+      itemRecords.map((item) => item.id)
+    );
+    if (missingItems.length > 0) {
+      throw new Error(`Items no encontrados: ${missingItems.join(", ")}`);
+    }
+
+    const missingPrices = findMissing(
+      itemIds,
+      priceRecords.map((price) => price.itemId)
+    );
+    if (missingPrices.length > 0) {
+      throw new Error(
+        `No hay precio activo para: ${missingPrices.join(", ")}`
+      );
+    }
+
+    const duplicatedActivePrices = findDuplicates(
+      priceRecords.map((price) => price.itemId)
+    );
+    if (duplicatedActivePrices.length > 0) {
+      throw new Error(
+        `Hay más de un precio activo para: ${duplicatedActivePrices.join(", ")}`
+      );
+    }
+
+    const itemMap = new Map(itemRecords.map((item) => [item.id, item]));
+    const priceMap = new Map(priceRecords.map((price) => [price.itemId, price]));
+
+    const insertValues = normalized.map(({ itemId, quantity }) => {
+      const price = priceMap.get(itemId);
+      if (!price) {
+        throw new Error(`No active price for item ${itemId}`);
+      }
+
+      return {
+        orderId,
+        itemId,
+        quantity,
+        status: "pending" as const,
+        priceId: price.id,
+      };
+    });
+
+    const createdRows = await tx
+      .insert(orderItems)
+      .values(insertValues)
+      .returning({
+        id: orderItems.id,
+        orderId: orderItems.orderId,
+        itemId: orderItems.itemId,
+        quantity: orderItems.quantity,
+        status: orderItems.status,
+      });
+
+    return createdRows.map((row) => {
+      const item = itemMap.get(row.itemId);
+      const price = priceMap.get(row.itemId);
+
+      if (!item || !price) {
+        throw new Error(`Inconsistent data for item ${row.itemId}`);
+      }
+
+      return {
+        id: row.id,
+        orderId: row.orderId,
+        itemId: row.itemId,
+        name: item.name,
+        quantity: row.quantity,
+        status: row.status,
+        totalAmount: Number(price.amount) * row.quantity,
+        categoryId: item.categoryId,
+        elaborationArea: item.elaborationArea,
+      };
+    });
+  });
+}
+
 
 export async function closeOrder(orderId: number) {
   return await db.transaction(async (tx) => {

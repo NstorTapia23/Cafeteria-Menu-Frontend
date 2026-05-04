@@ -5,11 +5,64 @@ import { db } from "@/db";
 import { items, prices } from "@/db/schema";
 import { createItemCategory } from "@/repositories/categories";
 import { SoftDeleteItem, updateItem } from "@/repositories/items";
-import { CreateItemInput, createItemSchema, updateItemSchema } from "@/schemas/ItemsSchemas";
-import { revalidatePath } from "next/cache";
+import {
+  CreateItemInput,
+  createItemSchema,
+  updateItemSchema,
+} from "@/schemas/ItemsSchemas";
+import { revalidatePath, revalidateTag } from "next/cache";
 
+// ---------------------------------------------------------------
+// Utilidad para construir URL de Cloudinary
+// ---------------------------------------------------------------
+function buildWebpUrl(publicId: string) {
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  if (!cloudName) {
+    throw new Error("Falta CLOUDINARY_CLOUD_NAME");
+  }
 
+  return `https://res.cloudinary.com/${cloudName}/image/upload/f_webp,q_auto/${publicId}`;
+}
 
+// ---------------------------------------------------------------
+// Subida de imágenes a Cloudinary
+// ---------------------------------------------------------------
+async function uploadImageToCloudinary(file: File) {
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const uploadPreset = process.env.CLOUDINARY_UPLOAD_PRESET;
+
+  if (!cloudName) throw new Error("Falta CLOUDINARY_CLOUD_NAME");
+  if (!uploadPreset) throw new Error("Falta CLOUDINARY_UPLOAD_PRESET");
+
+  const body = new FormData();
+  body.append("file", file);
+  body.append("upload_preset", uploadPreset);
+
+  const response = await fetch(
+    `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+    {
+      method: "POST",
+      body,
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Error subiendo imagen a Cloudinary: ${errorText}`);
+  }
+
+  const data: { public_id?: string } = await response.json();
+
+  if (!data.public_id) {
+    throw new Error("Cloudinary no devolvió public_id");
+  }
+
+  return buildWebpUrl(data.public_id);
+}
+
+// ---------------------------------------------------------------
+// Crear un ítem (sin imagen)
+// ---------------------------------------------------------------
 export async function createItemMenu(item: CreateItemInput) {
   const validated = createItemSchema.safeParse(item);
   if (!validated.success) {
@@ -42,8 +95,11 @@ export async function createItemMenu(item: CreateItemInput) {
       .returning();
 
     if (!newPrice[0]) throw new Error("No se pudo crear el precio");
+
+    // Revalidar rutas y el tag del menú cacheado
     revalidatePath("/");
     revalidatePath("/admin/workspace/dashboard/menu");
+    revalidateTag("menu-items" , "default");
 
     return {
       item: newItem[0],
@@ -52,55 +108,16 @@ export async function createItemMenu(item: CreateItemInput) {
   });
 }
 
-function buildWebpUrl(publicId: string) {
-  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-  if (!cloudName) {
-    throw new Error("Falta CLOUDINARY_CLOUD_NAME");
-  }
-
-  return `https://res.cloudinary.com/${cloudName}/image/upload/f_webp,q_auto/${publicId}`;
-}
-
-async function uploadImageToCloudinary(file: File) {
-  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-  const uploadPreset = process.env.CLOUDINARY_UPLOAD_PRESET;
-
-  if (!cloudName) throw new Error("Falta CLOUDINARY_CLOUD_NAME");
-  if (!uploadPreset) throw new Error("Falta CLOUDINARY_UPLOAD_PRESET");
-
-  const body = new FormData();
-  body.append("file", file);
-  body.append("upload_preset", uploadPreset);
-
-  const response = await fetch(
-    `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-    {
-      method: "POST",
-      body,
-    },
-  );
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Error subiendo imagen a Cloudinary: ${errorText}`);
-  }
-
-  const data: { public_id?: string } = await response.json();
-
-  if (!data.public_id) {
-    throw new Error("Cloudinary no devolvió public_id");
-  }
-
-  return buildWebpUrl(data.public_id);
-}
-
+// ---------------------------------------------------------------
+// Crear un ítem con imagen (formData)
+// ---------------------------------------------------------------
 export async function createItemWithImageAction(formData: FormData) {
   const rawValues = {
     name: String(formData.get("name") ?? ""),
     description: String(formData.get("description") ?? ""),
     price: Number(formData.get("price") ?? 0),
     elaborationArea: String(formData.get("elaborationArea") ?? ""),
-    itemCategory: Number(formData.get("itemCategory") ?? 0), 
+    itemCategory: Number(formData.get("itemCategory") ?? 0),
   };
 
   const validated = createItemSchema.safeParse({
@@ -130,6 +147,9 @@ export async function createItemWithImageAction(formData: FormData) {
   });
 }
 
+// ---------------------------------------------------------------
+// Actualizar un ítem (con posible imagen)
+// ---------------------------------------------------------------
 export async function updateItemWithImageAction(formData: FormData) {
   const id = Number(formData.get("id"));
   const name = String(formData.get("name") ?? "").trim();
@@ -151,7 +171,11 @@ export async function updateItemWithImageAction(formData: FormData) {
   }
 
   const allowedAreas = ["cocina", "bar", "lunch"] as const;
-  if (!allowedAreas.includes(elaborationArea as (typeof allowedAreas)[number])) {
+  if (
+    !allowedAreas.includes(
+      elaborationArea as (typeof allowedAreas)[number]
+    )
+  ) {
     throw new Error("El área de elaboración no es válida");
   }
 
@@ -188,8 +212,10 @@ export async function updateItemWithImageAction(formData: FormData) {
   }
 
   const result = await updateItem(validated.data);
+
   revalidatePath("/");
   revalidatePath("/admin/workspace/dashboard/menu");
+  revalidateTag("menu-items" , "default");
 
   return {
     item: {
@@ -203,20 +229,27 @@ export async function updateItemWithImageAction(formData: FormData) {
   };
 }
 
+// ---------------------------------------------------------------
+// Eliminar (soft delete) un ítem
+// ---------------------------------------------------------------
 export async function DeleteItemAction(itemId: number) {
   try {
     await SoftDeleteItem(itemId);
-  revalidatePath("/");
-  revalidatePath("/admin/workspace/dashboard/menu");
+    revalidatePath("/");
+    revalidatePath("/admin/workspace/dashboard/menu");
+    revalidateTag("menu-items", "default");
   } catch (err) {
     throw new Error("Algo ha ido mal eliminando el elemento: " + err);
   }
 }
 
-export async function CreateItemCategoryAction(name: string){
-
+// ---------------------------------------------------------------
+// Crear una categoría
+// ---------------------------------------------------------------
+export async function CreateItemCategoryAction(name: string) {
+  const result = await createItemCategory(name);
   revalidatePath("/");
   revalidatePath("/admin/workspace/dashboard/menu");
-  return await createItemCategory(name)
-
+  revalidateTag("menu-items" , "default");
+  return result;
 }

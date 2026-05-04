@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { MoreHorizontal } from "lucide-react";
@@ -8,13 +8,6 @@ import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Popover,
   PopoverContent,
@@ -35,15 +28,8 @@ import type { OrderItem } from "@/schemas/orderItemsSchemas";
 import {
   updateQuantity,
   updateStatus,
-  addItem,
   CloseOrderById,
 } from "@/app/admin/workspace/orders/[id]/actions";
-
-interface MenuItem {
-  id: number;
-  name: string;
-  price: number | string | null;
-}
 
 type OrderItemRowProps = {
   item: OrderItem;
@@ -111,7 +97,6 @@ function getStatusStyles(status: OrderItem["status"]) {
       return "bg-muted text-foreground";
   }
 }
-
 const OrderItemRow = memo(function OrderItemRow({
   item,
   unitPrice,
@@ -242,57 +227,24 @@ const OrderItemRow = memo(function OrderItemRow({
 export default function OrderDetailClient({
   orderId,
   initialItems,
-  menuItems,
 }: {
   orderId: number;
   initialItems: OrderItem[];
-  menuItems: MenuItem[];
 }) {
   const router = useRouter();
 
   const [items, setItems] = useState<OrderItem[]>(initialItems);
-  const [selectedMenuItemId, setSelectedMenuItemId] = useState<string>(() => {
-    return menuItems[0]?.id.toString() ?? "";
-  });
-
   const [editingItemId, setEditingItemId] = useState<number | null>(null);
   const [draftQuantity, setDraftQuantity] = useState<number>(1);
 
-  const [addingItem, setAddingItem] = useState(false);
   const [closingOrder, setClosingOrder] = useState(false);
   const [busyItemId, setBusyItemId] = useState<number | null>(null);
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
-
-  const itemsRef = useRef(items);
-
-  useEffect(() => {
-    itemsRef.current = items;
-  }, [items]);
-
-  const normalizedMenuItems = useMemo(
-    () =>
-      menuItems.map((item) => ({
-        ...item,
-        price: Number(item.price ?? 0),
-      })),
-    [menuItems],
-  );
-
-  const menuItemsById = useMemo(() => {
-    return new Map(normalizedMenuItems.map((item) => [item.id, item] as const));
-  }, [normalizedMenuItems]);
 
   const total = useMemo(
     () => items.reduce((sum, item) => sum + Number(item.totalAmount ?? 0), 0),
     [items],
   );
-
-  const selectedMenuItem = useMemo(() => {
-    if (!selectedMenuItemId) return undefined;
-    const id = Number(selectedMenuItemId);
-    if (Number.isNaN(id)) return undefined;
-    return menuItemsById.get(id);
-  }, [selectedMenuItemId, menuItemsById]);
 
   const getUnitPrice = useCallback((item: OrderItem) => {
     return item.cantidad > 0 ? Number(item.totalAmount) / item.cantidad : 0;
@@ -368,42 +320,6 @@ export default function OrderDetailClient({
     [orderId],
   );
 
-  const addItemHandler = useCallback(async () => {
-    if (!selectedMenuItem) {
-      toast.error("Selecciona un item válido");
-      return;
-    }
-
-    const selectedId = selectedMenuItem.id;
-    const existingPendingItem = itemsRef.current.find(
-      (item) => item.itemId === selectedId && item.status === "pending",
-    );
-
-    if (existingPendingItem) {
-      await acceptQuantityChange(
-        existingPendingItem.id,
-        existingPendingItem.cantidad,
-        existingPendingItem.cantidad + 1,
-      );
-      return;
-    }
-
-    setAddingItem(true);
-    try {
-      const formData = new FormData();
-      formData.append("orderId", orderId.toString());
-      formData.append("itemId", selectedId.toString());
-
-      const newItems = await addItem(formData);
-      setItems((prev) => mergeItemsPreserveReferences(prev, newItems));
-    } catch (error) {
-      toast.error("Error al agregar item");
-      console.error(error);
-    } finally {
-      setAddingItem(false);
-    }
-  }, [acceptQuantityChange, orderId, selectedMenuItem]);
-
   const closeOrderAction = useCallback(async () => {
     setClosingOrder(true);
     try {
@@ -426,7 +342,7 @@ export default function OrderDetailClient({
     }
   }, [orderId, router]);
 
-  const isAnyActionPending = addingItem || closingOrder || busyItemId !== null;
+  const isAnyActionPending = closingOrder || busyItemId !== null;
 
   return (
     <main className="container mx-auto px-4 py-6 md:px-6">
@@ -454,73 +370,21 @@ export default function OrderDetailClient({
         </CardHeader>
 
         <CardContent className="space-y-6">
-          <div className="flex flex-col items-end gap-3 rounded-lg bg-muted/30 p-4 sm:flex-row">
-            <div className="flex-1">
-              <label className="mb-1 block text-sm font-medium">
-                Agregar items
-              </label>
-              <Select
-                value={selectedMenuItemId || undefined}
-                onValueChange={setSelectedMenuItemId}
-                disabled={normalizedMenuItems.length === 0}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Seleccionar item" />
-                </SelectTrigger>
-                <SelectContent>
-                  {normalizedMenuItems.map((item) => (
-                    <SelectItem key={item.id} value={item.id.toString()}>
-                      {item.name} - ${Number(item.price).toFixed(2)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="flex justify-end gap-2">
+  <Link href={`/admin/workspace/orders/${orderId}/new-items`}>
+    <Button variant="outline" disabled={isAnyActionPending}>
+      Agregar...
+    </Button>
+  </Link>
 
-            <Button
-              onClick={addItemHandler}
-              disabled={!selectedMenuItem || addingItem}
-            >
-              {addingItem ? "Agregando..." : "+ Agregar"}
-            </Button>
-
-            <Button
-              variant="destructive"
-              disabled={isAnyActionPending}
-              onClick={() => setCloseDialogOpen(true)}
-            >
-              Cerrar orden
-            </Button>
-
-            <AlertDialog
-              open={closeDialogOpen}
-              onOpenChange={setCloseDialogOpen}
-            >
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>¿Cerrar orden?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Esta acción no se puede deshacer. Se marcará la orden como
-                    cerrada.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel disabled={closingOrder}>
-                    Cancelar
-                  </AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={(e) => {
-                      e.preventDefault();
-                      closeOrderAction();
-                    }}
-                    disabled={closingOrder}
-                  >
-                    {closingOrder ? "Cerrando..." : "Cerrar orden"}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
+  <Button
+    variant="destructive"
+    disabled={isAnyActionPending}
+    onClick={() => setCloseDialogOpen(true)}
+  >
+    Cerrar orden
+  </Button>
+</div>
 
           <div className="space-y-3">
             {items.map((item) => {
@@ -548,12 +412,38 @@ export default function OrderDetailClient({
 
             {items.length === 0 && (
               <p className="py-6 text-center text-muted-foreground">
-                No hay ítems en esta orden. Usa el menú para agregar.
+                No hay ítems en esta orden.
               </p>
             )}
           </div>
         </CardContent>
       </Card>
+
+      <AlertDialog open={closeDialogOpen} onOpenChange={setCloseDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Cerrar orden?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. Se marcará la orden como
+              cerrada.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={closingOrder}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                closeOrderAction();
+              }}
+              disabled={closingOrder}
+            >
+              {closingOrder ? "Cerrando..." : "Cerrar orden"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </main>
   );
 }
