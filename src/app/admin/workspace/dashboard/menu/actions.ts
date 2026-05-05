@@ -12,9 +12,6 @@ import {
 } from "@/schemas/ItemsSchemas";
 import { revalidatePath, revalidateTag } from "next/cache";
 
-// ---------------------------------------------------------------
-// Utilidad para construir URL de Cloudinary
-// ---------------------------------------------------------------
 function buildWebpUrl(publicId: string) {
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
   if (!cloudName) {
@@ -23,10 +20,6 @@ function buildWebpUrl(publicId: string) {
 
   return `https://res.cloudinary.com/${cloudName}/image/upload/f_webp,q_auto/${publicId}`;
 }
-
-// ---------------------------------------------------------------
-// Subida de imágenes a Cloudinary
-// ---------------------------------------------------------------
 async function uploadImageToCloudinary(file: File) {
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
   const uploadPreset = process.env.CLOUDINARY_UPLOAD_PRESET;
@@ -60,9 +53,6 @@ async function uploadImageToCloudinary(file: File) {
   return buildWebpUrl(data.public_id);
 }
 
-// ---------------------------------------------------------------
-// Crear un ítem (sin imagen)
-// ---------------------------------------------------------------
 export async function createItemMenu(item: CreateItemInput) {
   const validated = createItemSchema.safeParse(item);
   if (!validated.success) {
@@ -96,7 +86,6 @@ export async function createItemMenu(item: CreateItemInput) {
 
     if (!newPrice[0]) throw new Error("No se pudo crear el precio");
 
-    // Revalidar rutas y el tag del menú cacheado
     revalidatePath("/");
     revalidatePath("/admin/workspace/dashboard/menu");
     revalidateTag("menu-items" , "default");
@@ -108,9 +97,6 @@ export async function createItemMenu(item: CreateItemInput) {
   });
 }
 
-// ---------------------------------------------------------------
-// Crear un ítem con imagen (formData)
-// ---------------------------------------------------------------
 export async function createItemWithImageAction(formData: FormData) {
   const rawValues = {
     name: String(formData.get("name") ?? ""),
@@ -147,9 +133,6 @@ export async function createItemWithImageAction(formData: FormData) {
   });
 }
 
-// ---------------------------------------------------------------
-// Actualizar un ítem (con posible imagen)
-// ---------------------------------------------------------------
 export async function updateItemWithImageAction(formData: FormData) {
   const id = Number(formData.get("id"));
   const name = String(formData.get("name") ?? "").trim();
@@ -204,7 +187,7 @@ export async function updateItemWithImageAction(formData: FormData) {
     description: descriptionRaw.length > 0 ? descriptionRaw : null,
     url: imageUrl,
     price,
-    elaborationArea: elaborationArea as "cocina" | "bar" | "lunch",
+    elaborationArea: elaborationArea ,
   });
 
   if (!validated.success) {
@@ -229,9 +212,6 @@ export async function updateItemWithImageAction(formData: FormData) {
   };
 }
 
-// ---------------------------------------------------------------
-// Eliminar (soft delete) un ítem
-// ---------------------------------------------------------------
 export async function DeleteItemAction(itemId: number) {
   try {
     await SoftDeleteItem(itemId);
@@ -243,9 +223,6 @@ export async function DeleteItemAction(itemId: number) {
   }
 }
 
-// ---------------------------------------------------------------
-// Crear una categoría
-// ---------------------------------------------------------------
 export async function CreateItemCategoryAction(name: string) {
   const result = await createItemCategory(name);
   revalidatePath("/");

@@ -13,7 +13,6 @@ interface TokenPayload {
   name: string;
   role:
     | "admin"
-    | "superadmin"
     | "dependiente"
     | "cocinero"
     | "bartender"
@@ -81,9 +80,6 @@ export async function middleware(req: NextRequest) {
   const isAdminLogin = pathname === "/admin";
   const isWorkspace = pathname.startsWith("/admin/workspace");
 
-  // =========================
-  // ROOT
-  // =========================
   if (isRoot) {
     if (!token) return NextResponse.next();
 
@@ -99,9 +95,6 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // =========================
-  // LOGIN PAGE (/admin)
-  // =========================
   if (isAdminLogin) {
     if (!token) return NextResponse.next();
 
@@ -118,9 +111,6 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // =========================
-  // PROTECTED WORKSPACE
-  // =========================
   if (isWorkspace) {
     if (!token) {
       return NextResponse.redirect(new URL("/admin", req.url));
@@ -129,7 +119,6 @@ export async function middleware(req: NextRequest) {
     try {
       const payload = await verifyToken(token);
 
-      // Si entra a /admin/workspace exacto
       if (pathname === "/admin/workspace") {
         return NextResponse.redirect(
           new URL(getDefaultRedirectForRole(payload.role), req.url),

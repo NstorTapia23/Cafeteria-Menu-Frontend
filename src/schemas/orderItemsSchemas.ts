@@ -43,6 +43,7 @@ export type AddOrderItemsInput = z.infer<typeof addOrderItemsSchema>;
 export type AddOrderItemInput = z.infer<typeof addOrderItemInputSchema>;
 export type AddOrderItem = z.infer<typeof addOrderItemInfoSchema>;
 export type ElaborationArea = z.infer<typeof elaborationAreaSchema>;
+
 export const PendsForCook = z.object({
   id: z.number().int().positive(),
   orderId: z.number().int().positive(),

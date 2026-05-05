@@ -12,6 +12,7 @@ import {
   index,
 } from "drizzle-orm/pg-core";
 import { UserRole } from "@/types/roles";
+
 export const workerRole = pgEnum("worker_role", [
   UserRole.DEPENDIENTE as string,
   UserRole.BARTENDER as string,
@@ -47,39 +48,66 @@ export const workers = pgTable("workers", {
   delete_at: timestamp({ withTimezone: true }),
 });
 
-export const items_categories = pgTable("items_categories" , {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
-  name: varchar("name" , {length: 255}).notNull(),
-  isActive: boolean("is_active").default(true).notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-})
-export const items = pgTable("items", {
-  id: serial("id").primaryKey(),
-  name: varchar("name", { length: 255 }).notNull(),
-  description: varchar("description", { length: 500 }),
-  categoryId: integer("category_id").notNull().references(() => items_categories.id),
-  elaborationArea: elaborationAreas("elaboration_area").notNull(),
-  imageUrl: varchar("image_url", { length: 500 }),
-  is_active: boolean("is_active").default(true).notNull(),
-}, (table) => [
-  index("items_category_id_idx").on(table.categoryId),
-])
+export const items_categories = pgTable(
+  "items_categories",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    name: varchar("name", { length: 255 }).notNull(),
+    isActive: boolean("is_active").default(true).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    nameUnique: uniqueIndex("items_categories_name_unique").on(table.name),
 
-export const orders = pgTable("orders", {
-  id: serial("id").primaryKey(),
-  workerId: integer("worker_id")
-    .notNull()
-    .references(() => workers.id),
-  numberTable: integer("number_table").notNull(),
-  status: orderStatus("status").notNull().default("open"),
-  createdAt: timestamp("created_at", {
-    withTimezone: true,
-    mode: "date",
-  })
-    .notNull()
-    .defaultNow(),
-  closedAt: timestamp("closed_at", { withTimezone: true, mode: "date" }),
-});
+    activeNameIdx: index("items_categories_active_name_idx")
+      .on(table.name)
+      .where(sql`is_active = true`),
+  }),
+);
+
+export const items = pgTable(
+  "items",
+  {
+    id: serial("id").primaryKey(),
+    name: varchar("name", { length: 255 }).notNull(),
+    description: varchar("description", { length: 500 }),
+    categoryId: integer("category_id")
+      .notNull()
+      .references(() => items_categories.id),
+    elaborationArea: elaborationAreas("elaboration_area").notNull(),
+    imageUrl: varchar("image_url", { length: 500 }),
+    is_active: boolean("is_active").default(true).notNull(),
+  },
+  (table) => [
+    index("items_category_id_idx").on(table.categoryId),
+  ],
+);
+
+export const orders = pgTable(
+  "orders",
+  {
+    id: serial("id").primaryKey(),
+    workerId: integer("worker_id")
+      .notNull()
+      .references(() => workers.id),
+    numberTable: integer("number_table").notNull(),
+    status: orderStatus("status").notNull().default("open"),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+      mode: "date",
+    })
+      .notNull()
+      .defaultNow(),
+    closedAt: timestamp("closed_at", { withTimezone: true, mode: "date" }),
+  },
+  (table) => [
+    index("orders_status_idx").on(table.status),
+
+    index("orders_worker_id_idx").on(table.workerId),
+  ],
+);
 
 export const prices = pgTable(
   "prices",
@@ -104,6 +132,7 @@ export const prices = pgTable(
       .where(sql`valid_to IS NULL`),
   }),
 );
+
 export const orderItems = pgTable(
   "order_items",
   {
@@ -116,9 +145,11 @@ export const orderItems = pgTable(
       .references(() => items.id),
     quantity: integer("quantity").notNull(),
     status: orderItemStatus("status").notNull().default("pending"),
-    priceId: integer().notNull().references(() => prices.id)
+    priceId: integer("priceid").notNull().references(() => prices.id),
   },
   (table) => [
+    index("order_items_order_id_idx").on(table.orderId),
+
     index("order_items_status_idx").on(table.status),
-  ]
+  ],
 );
