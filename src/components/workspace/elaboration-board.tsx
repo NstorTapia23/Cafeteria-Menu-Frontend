@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useElaborationItems } from "@/hooks/use-elaboration-items";
-import { updateStatus } from "@/app/admin/workspace/orders/[id]/actions";
 
 type ElaborationArea = "bar" | "cocina" | "lunch";
 
