@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { MenuInfoType } from "@/components/commons/Menu-Item-Card";
+import { ItemCategoryType } from "@/components/commons/newItemForm";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,6 +20,7 @@ import { Separator } from "@/components/ui/separator";
 
 type Props = {
   item: MenuInfoType;
+  categories: ItemCategoryType[];
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => Promise<void>;
   onDelete: (id: number) => Promise<void>;
   loading: boolean;
@@ -30,10 +32,12 @@ type FormState = {
   description: string;
   price: string;
   elaborationArea: "bar" | "cocina" | "lunch";
+  categoryId: string;
 };
 
 export default function EditItemForm({
   item,
+  categories,
   onSubmit,
   onDelete,
   loading,
@@ -47,8 +51,11 @@ export default function EditItemForm({
       description: item.description ?? "",
       price: item.price?.toString() ?? "",
       elaborationArea: item.elaborationArea ?? "cocina",
+      categoryId: item.categoryId?.toString() ?? "",
     };
   }, [item]);
+
+  const [categoryId, setCategoryId] = useState(() => initialForm.categoryId);
 
   const handleDelete = async () => {
     const confirmDelete = window.confirm(
@@ -83,6 +90,7 @@ export default function EditItemForm({
           )}
 
           <input type="hidden" name="id" value={item.id} />
+          <input type="hidden" name="categoryId" value={categoryId} />
 
           <Card className="overflow-hidden rounded-2xl">
             <CardContent className="p-0">
@@ -129,8 +137,8 @@ export default function EditItemForm({
             <div className="grid gap-2">
               <Label>Área</Label>
               <Select
-                name="elaborationArea"
                 defaultValue={initialForm.elaborationArea}
+                name="elaborationArea"
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -139,6 +147,25 @@ export default function EditItemForm({
                   <SelectItem value="cocina">cocina</SelectItem>
                   <SelectItem value="bar">bar</SelectItem>
                   <SelectItem value="lunch">lunch</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-2">
+              <Label>Categoría</Label>
+              <Select value={categoryId} onValueChange={setCategoryId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona una categoría" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((category) => (
+                    <SelectItem
+                      key={category.id}
+                      value={category.id.toString()}
+                    >
+                      {category.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

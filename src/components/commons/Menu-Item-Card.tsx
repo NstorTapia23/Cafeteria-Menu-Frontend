@@ -12,6 +12,7 @@ export type MenuInfoType = {
   name: string;
   description: string | null;
   url: string | null;
+  itemCategory: number
   price: number;
   elaborationArea: "bar" | "cocina" | "lunch"
 };

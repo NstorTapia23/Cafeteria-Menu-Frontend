@@ -1,4 +1,3 @@
-"use server";
 
 import { getOrderItemContextById } from "@/repositories/orderItems.realtime";
 import {

@@ -140,6 +140,9 @@ export async function updateItemWithImageAction(formData: FormData) {
   const elaborationArea = String(formData.get("elaborationArea") ?? "").trim();
   const priceRaw = String(formData.get("price") ?? "").trim();
   const urlRaw = String(formData.get("url") ?? "").trim();
+  const categoryIdRaw = String(formData.get("categoryId") ?? "").trim();
+const categoryId =
+  categoryIdRaw.length > 0 ? Number(categoryIdRaw) : undefined;
 
   if (!Number.isInteger(id) || id <= 0) {
     throw new Error("ID inválido");
@@ -180,15 +183,15 @@ export async function updateItemWithImageAction(formData: FormData) {
   } else if (urlRaw.length > 0) {
     imageUrl = urlRaw;
   }
-
-  const validated = updateItemSchema.safeParse({
-    id,
-    name,
-    description: descriptionRaw.length > 0 ? descriptionRaw : null,
-    url: imageUrl,
-    price,
-    elaborationArea: elaborationArea ,
-  });
+const validated = updateItemSchema.safeParse({
+  id,
+  name,
+  description: descriptionRaw.length > 0 ? descriptionRaw : null,
+  url: imageUrl,
+  price,
+  elaborationArea: elaborationArea as "cocina" | "bar" | "lunch",
+  itemCategory: categoryId, 
+});
 
   if (!validated.success) {
     throw new Error(validated.error.message);
@@ -201,15 +204,16 @@ export async function updateItemWithImageAction(formData: FormData) {
   revalidateTag("menu-items" , "default");
 
   return {
-    item: {
-      id: result.id,
-      name: result.name,
-      description: result.description,
-      url: result.imageUrl ?? null,
-      price: result.activePrice?.amount ?? validated.data.price ?? 0,
-      elaborationArea: result.elaborationArea,
-    },
-  };
+  item: {
+    id: result.id,
+    name: result.name,
+    description: result.description,
+    url: result.imageUrl ?? null,
+    categoryId: result.categoryId, 
+    price: result.activePrice?.amount ?? validated.data.price ?? 0,
+    elaborationArea: result.elaborationArea,
+  },
+};
 }
 
 export async function DeleteItemAction(itemId: number) {

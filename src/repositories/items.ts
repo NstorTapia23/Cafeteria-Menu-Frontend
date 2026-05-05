@@ -1,18 +1,8 @@
 import { db } from "@/db";
-import { createItemSchema, type CreateItemInput, type UpdateItemType } from "@/schemas/ItemsSchemas";
+import { createItemSchema, updateItemSchema, type CreateItemInput, type UpdateItemType } from "@/schemas/ItemsSchemas";
 import { items, items_categories, prices } from "@/db/schema";
-import { asc, and, eq, isNull } from "drizzle-orm";
+import {  and, eq, isNull } from "drizzle-orm";
 
-export async function getActiveItemCategories() {
-  return await db
-    .select({
-      id: items_categories.id,
-      name: items_categories.name,
-    })
-    .from(items_categories)
-    .where(eq(items_categories.isActive, true))
-    .orderBy(asc(items_categories.name));
-}
 
 export async function createItemMenu(item: CreateItemInput) {
   const validated = createItemSchema.safeParse(item);
@@ -84,69 +74,55 @@ export async function getAllItems() {
 
   return result;
 }
-
 export async function updateItem(itemUpdate: UpdateItemType) {
+  const data = updateItemSchema.parse(itemUpdate);
+  const now = new Date();
+
   return await db.transaction(async (tx) => {
-    const existingItem = await tx.query.items.findFirst({
-      where: eq(items.id, itemUpdate.id),
-    });
-
-    if (!existingItem) {
-      throw new Error(`El ítem con id ${itemUpdate.id} no existe`);
-    }
-
     const [updatedItem] = await tx
       .update(items)
-      .set({
-        name: itemUpdate.name ?? existingItem.name,
-        description:
-          itemUpdate.description !== undefined
-            ? itemUpdate.description
-            : existingItem.description,
-        categoryId:
-          itemUpdate.itemCategory !== undefined
-            ? itemUpdate.itemCategory
-            : existingItem.categoryId,
-        elaborationArea:
-          itemUpdate.elaborationArea ?? existingItem.elaborationArea,
-        imageUrl:
-          itemUpdate.url !== undefined ? itemUpdate.url : existingItem.imageUrl,
-      })
-      .where(eq(items.id, itemUpdate.id))
+      .set(
+        Object.fromEntries(
+          Object.entries({
+            name: data.name,
+            description: data.description,
+            categoryId: data.categoryId,
+            elaborationArea: data.elaborationArea,
+            imageUrl: data.url,
+          }).filter(([, v]) => v !== undefined)
+        )
+      )
+      .where(eq(items.id, data.id))
       .returning();
 
     if (!updatedItem) {
-      throw new Error("No se pudo actualizar el ítem");
+      throw new Error(`El ítem con id ${data.id} no existe`);
     }
 
-    let activePrice = await tx.query.prices.findFirst({
-      where: and(eq(prices.itemId, itemUpdate.id), isNull(prices.validTo)),
-    });
+    const activePrice = await (async () => {
+      if (data.price === undefined) {
+        return tx.query.prices.findFirst({
+          where: and(eq(prices.itemId, data.id), isNull(prices.validTo)),
+        });
+      }
 
-    if (itemUpdate.price !== undefined) {
       await tx
         .update(prices)
-        .set({ validTo: new Date() })
-        .where(and(eq(prices.itemId, itemUpdate.id), isNull(prices.validTo)));
+        .set({ validTo: now })
+        .where(and(eq(prices.itemId, data.id), isNull(prices.validTo)));
 
-      const [insertedPrice] = await tx
+      const [inserted] = await tx
         .insert(prices)
         .values({
-          itemId: itemUpdate.id,
-          amount: itemUpdate.price,
-          validFrom: new Date(),
+          itemId: data.id,
+          amount: data.price,
+          validFrom: now,
           validTo: null,
         })
         .returning();
 
-      activePrice = insertedPrice ?? activePrice;
-    }
-
-    if (!activePrice) {
-      activePrice = await tx.query.prices.findFirst({
-        where: and(eq(prices.itemId, itemUpdate.id), isNull(prices.validTo)),
-      });
-    }
+      return inserted;
+    })();
 
     return {
       ...updatedItem,

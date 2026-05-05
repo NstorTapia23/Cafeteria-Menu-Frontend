@@ -7,7 +7,9 @@ import {
   DeleteItemAction,
 } from "@/app/admin/workspace/dashboard/menu/actions";
 
-import CreateItemPage, { ItemCategoryType } from "@/components/commons/newItemForm";
+import CreateItemPage, {
+  ItemCategoryType,
+} from "@/components/commons/newItemForm";
 import CreateCategory from "./CreateCategory";
 import EditItemForm from "@/components/commons/EditItemForm";
 import {
@@ -155,14 +157,16 @@ export default function MenuDashboardClient({
 
           <div className="flex min-h-0 flex-1 flex-col">
             {selectedItem && (
-              <EditItemForm
-                item={selectedItem}
-                onSubmit={handleUpdate}
-                onDelete={handleDelete}
-                loading={saving}
-                error={editError}
-              />
-            )}
+  <EditItemForm
+    key={selectedItem.id}
+    item={selectedItem}
+    categories={itemCategories}
+    onSubmit={handleUpdate}
+    onDelete={handleDelete}
+    loading={saving}
+    error={editError}
+  />
+)}
           </div>
         </SheetContent>
       </Sheet>
