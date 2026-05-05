@@ -25,19 +25,17 @@ async function verifyToken(token: string): Promise<TokenPayload> {
 }
 
 const routePermissions: Record<string, string[]> = {
-  "/admin/workspace/dashboard": ["admin", "superadmin"],
-  "/admin/workspace/register": ["admin", "superadmin"],
+  "/admin/workspace/dashboard": ["admin"],
+  "/admin/workspace/register": ["admin"],
   "/admin/workspace/system": [
     "cocinero",
     "bartender",
     "lunch",
     "admin",
-    "superadmin",
   ],
-  "/admin/workspace/orders": ["dependiente", "admin", "superadmin"],
+  "/admin/workspace/orders": ["dependiente", "admin"],
   "/admin/workspace/profile": [
     "admin",
-    "superadmin",
     "dependiente",
     "cocinero",
     "bartender",
@@ -56,9 +54,8 @@ function getDefaultRedirectForRole(role: string): string {
     case "lunch":
       return "/admin/workspace/system/lunch";
     case "admin":
-      return "/admin/workspace/dashboard/metrics";
     default:
-      return "/admin/workspace";
+      return "/";
   }
 }
 
@@ -72,16 +69,21 @@ function hasAccess(pathname: string, role: string): boolean {
   return routePermissions[matchedPath].includes(role);
 }
 
+function clearSessionAndRedirect(req: NextRequest, destination: string) {
+  const res = NextResponse.redirect(new URL(destination, req.url));
+  res.cookies.delete("session");
+  return res;
+}
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const token = req.cookies.get("session")?.value;
 
-  const isRoot = pathname === "/";
-  const isAdminLogin = pathname === "/admin";
+  const isAdmin = pathname === "/admin";
   const isWorkspace = pathname.startsWith("/admin/workspace");
 
-  if (isRoot) {
-    if (!token) return NextResponse.next();
+  if (isAdmin) {
+    if (!token) return NextResponse.redirect(new URL("/", req.url));
 
     try {
       const payload = await verifyToken(token);
@@ -89,41 +91,15 @@ export async function middleware(req: NextRequest) {
         new URL(getDefaultRedirectForRole(payload.role), req.url),
       );
     } catch {
-      const res = NextResponse.next();
-      res.cookies.delete("session");
-      return res;
-    }
-  }
-
-  if (isAdminLogin) {
-    if (!token) return NextResponse.next();
-
-    try {
-      const payload = await verifyToken(token);
-
-      return NextResponse.redirect(
-        new URL(getDefaultRedirectForRole(payload.role), req.url),
-      );
-    } catch {
-      const res = NextResponse.next();
-      res.cookies.delete("session");
-      return res;
+      return clearSessionAndRedirect(req, "/");
     }
   }
 
   if (isWorkspace) {
-    if (!token) {
-      return NextResponse.redirect(new URL("/admin", req.url));
-    }
+    if (!token) return NextResponse.redirect(new URL("/admin", req.url));
 
     try {
       const payload = await verifyToken(token);
-
-      if (pathname === "/admin/workspace") {
-        return NextResponse.redirect(
-          new URL(getDefaultRedirectForRole(payload.role), req.url),
-        );
-      }
 
       if (!hasAccess(pathname, payload.role)) {
         return NextResponse.redirect(
@@ -133,9 +109,7 @@ export async function middleware(req: NextRequest) {
 
       return NextResponse.next();
     } catch {
-      const res = NextResponse.redirect(new URL("/admin", req.url));
-      res.cookies.delete("session");
-      return res;
+      return clearSessionAndRedirect(req, "/");
     }
   }
 
@@ -143,7 +117,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
-  ],
+  matcher: ["/admin", "/admin/:path*"],
 };

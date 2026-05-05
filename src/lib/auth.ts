@@ -27,8 +27,11 @@ export async function createSessionToken(payload: {
     .setExpirationTime("7d")
     .sign(secret);
 }
-
 export async function verifySessionToken(token: string) {
   const { payload } = await jwtVerify(token, secret);
-  return payload;
+  return payload as {
+    sub: string;
+    name: string;
+    role: UserRole;
+  };
 }

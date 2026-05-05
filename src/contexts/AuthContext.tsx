@@ -6,6 +6,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -62,6 +63,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const hasBootstrapped = useRef(false);
+
   const isAuthenticated = Boolean(user);
 
   const fetchCurrentUser = useCallback(async (): Promise<User | null> => {
@@ -83,6 +86,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const checkAuth = useCallback(async () => {
     try {
       const currentUser = await fetchCurrentUser();
+
       return {
         success: Boolean(currentUser),
         user: currentUser,
@@ -96,8 +100,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [fetchCurrentUser]);
 
-  // Inicialización: solo se ejecuta una vez al montar el provider
   useEffect(() => {
+    if (hasBootstrapped.current) return;
+    hasBootstrapped.current = true;
+
     let cancelled = false;
 
     const bootstrapAuth = async () => {
@@ -106,6 +112,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       try {
         const result = await checkAuth();
+
         if (!cancelled) {
           setUser(result.user);
           setError(result.error ?? null);
@@ -165,44 +172,41 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, []);
 
-  const register = useCallback(
-    async (name: string, password: string, role: Role) => {
-      setLoading(true);
-      setError(null);
+  const register = useCallback(async (name: string, password: string, role: Role) => {
+    setLoading(true);
+    setError(null);
 
-      try {
-        const response = await fetch("/api/auth/register", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({ name, password, role }),
-        });
+    try {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ name, password, role }),
+      });
 
-        const data: AuthMutationResponse = await response.json();
+      const data: AuthMutationResponse = await response.json();
 
-        if (!response.ok || !data.worker?.id) {
-          const msg = data.error || "Error en registro";
-          setUser(null);
-          setError(msg);
-          return { success: false, error: msg };
-        }
-
-        setUser(data.worker);
-        setError(null);
-        return { success: true, user: data.worker };
-      } catch {
-        const msg = "Error de conexión";
+      if (!response.ok || !data.worker?.id) {
+        const msg = data.error || "Error en registro";
         setUser(null);
         setError(msg);
         return { success: false, error: msg };
-      } finally {
-        setLoading(false);
       }
-    },
-    [],
-  );
+
+      setUser(data.worker);
+      setError(null);
+      return { success: true, user: data.worker };
+    } catch {
+      const msg = "Error de conexión";
+      setUser(null);
+      setError(msg);
+      return { success: false, error: msg };
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   const logout = useCallback(async () => {
     setLoading(true);

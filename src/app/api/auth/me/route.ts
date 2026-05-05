@@ -8,17 +8,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ user: null }, { status: 401 });
   }
 
-  try {
-    const payload = await verifySessionToken(token);
+  const payload = await verifySessionToken(token);
 
-    return NextResponse.json({
-      user: {
-        id: payload.sub,
-        name: payload.name,
-        role: payload.role,
-      },
-    });
-  } catch {
-    return NextResponse.json({ user: null }, { status: 401 });
-  }
+  return NextResponse.json({
+    user: {
+      id: payload.sub,
+      name: payload.name,
+      role: payload.role,
+    },
+  });
 }
