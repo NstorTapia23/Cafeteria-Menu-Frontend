@@ -41,7 +41,7 @@ function getDefaultRedirectForRole(role: string): string {
     case "lunch":
       return "/admin/workspace/system/lunch";
     case "admin":
-      return "/admin/workspace/dashboard";
+      return "/admin/workspace/dashboard/metrics";
     default:
       return "/admin";
   }
