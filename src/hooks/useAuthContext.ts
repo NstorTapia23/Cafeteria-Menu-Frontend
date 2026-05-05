@@ -2,7 +2,6 @@
 
 import { useAuthContext } from "@/contexts/AuthContext";
 
-// Hook simplificado que usa el Context de autenticación
 export function useAuth() {
   const context = useAuthContext();
 

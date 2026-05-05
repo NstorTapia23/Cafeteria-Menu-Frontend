@@ -30,7 +30,7 @@ export function NewOrderForm({ workerId, onSuccess }: NewOrderFormProps) {
     if (result.success) {
       setNumberTable("");
       onSuccess?.();
-      router.refresh(); // Actualiza la lista de órdenes
+      router.refresh(); 
     } else {
       setError(result.error || "Error al crear la orden");
     }
@@ -67,8 +67,7 @@ export function NewOrderForm({ workerId, onSuccess }: NewOrderFormProps) {
             disabled={isPending}
           />
         </div>
-
-        {/* workerId oculto */}
+        
         <input type="hidden" name="workerId" value={workerId} />
 
         {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
