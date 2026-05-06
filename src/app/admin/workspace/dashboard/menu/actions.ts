@@ -143,7 +143,6 @@ export async function updateItemWithImageAction(formData: FormData) {
   const categoryIdRaw = String(formData.get("categoryId") ?? "").trim();
 const categoryId =
   categoryIdRaw.length > 0 ? Number(categoryIdRaw) : undefined;
-
   if (!Number.isInteger(id) || id <= 0) {
     throw new Error("ID inválido");
   }
@@ -190,9 +189,8 @@ const validated = updateItemSchema.safeParse({
   url: imageUrl,
   price,
   elaborationArea: elaborationArea as "cocina" | "bar" | "lunch",
-  itemCategory: categoryId, 
+  categoryId: categoryId, 
 });
-
   if (!validated.success) {
     throw new Error(validated.error.message);
   }

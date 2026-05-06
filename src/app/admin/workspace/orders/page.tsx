@@ -1,14 +1,11 @@
 import OrdersAndPendsClient from "@/components/OrdersAndPendsClient";
-import { getCookedElementsCard } from "@/repositories/orderItems";
-import { getOpenOrders } from "@/repositories/orders";
+import { getOpenOrdersActions } from "./actions";
 
 export default async function OrdersPage() {
-  const ordenesAbiertas = await getOpenOrders();
-  const orderItemsCooked = await getCookedElementsCard("cooked");
+  const ordenesAbiertas = await getOpenOrdersActions();
   return (
     <OrdersAndPendsClient
       ordenesIniciales={ordenesAbiertas}
-      pendientesIniciales={orderItemsCooked}
     />
   );
 }
