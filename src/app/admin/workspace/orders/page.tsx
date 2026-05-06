@@ -1,3 +1,4 @@
+"use server"
 import OrdersAndPendsClient from "@/components/OrdersAndPendsClient";
 import { getOpenOrdersActions } from "./actions";
 
