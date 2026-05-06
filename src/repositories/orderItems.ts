@@ -23,46 +23,29 @@ export async function getOrderItemsByOrderId(orderID: number) {
     })
     .from(orderItems)
     .innerJoin(items, eq(orderItems.itemId, items.id))
-    .innerJoin(prices, and(eq(orderItems.itemId, prices.itemId) , eq(orderItems.priceId , prices.id)))
+    .innerJoin(prices, eq(orderItems.priceId, prices.id))
     .where(
         eq(orderItems.orderId, orderID),
       );
   return result;
 }
 type UpdateOrderItemQuantity = z.infer<typeof updateOrderItemQuantitySchema>;
-
-export async function updateOrderItemQuantity(
-  orderItemInfo: UpdateOrderItemQuantity,
-) {
-  const { id, quantity: delta } = orderItemInfo;
-
+export async function updateOrderItemQuantity({ id, quantity: delta }: UpdateOrderItemQuantity) {
   return await db.transaction(async (tx) => {
-    const currentItem = await tx.query.orderItems.findFirst({
-      where: eq(orderItems.id, id),
-    });
+    const [updated] = await tx
+      .update(orderItems)
+      .set({ quantity: sql`${orderItems.quantity} + ${delta}` })
+      .where(eq(orderItems.id, id))
+      .returning({ id: orderItems.id, quantity: orderItems.quantity });
 
-    if (!currentItem) {
-      throw new Error(`Order item with id ${id} not found`);
-    }
+    if (!updated) throw new Error(`Order item with id ${id} not found`);
 
-    const newQuantity = currentItem.quantity + delta;
-
-    if (newQuantity <= 0) {
+    if (updated.quantity <= 0) {
       await tx.delete(orderItems).where(eq(orderItems.id, id));
       return { success: true, deleted: true, id };
     }
 
-    await tx
-      .update(orderItems)
-      .set({ quantity: newQuantity })
-      .where(eq(orderItems.id, id));
-
-    return {
-      success: true,
-      updated: true,
-      id,
-      newQuantity,
-    };
+    return { success: true, updated: true, id, newQuantity: updated.quantity };
   });
 }
 type UpdateOrderItemStatusInput = z.infer<typeof updateOrderItemStatusSchema>;

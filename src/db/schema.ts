@@ -82,6 +82,8 @@ export const items = pgTable(
   },
   (table) => [
     index("items_category_id_idx").on(table.categoryId),
+    index("items_elaboration_area_idx").on(table.elaborationArea),
+    index("items_active_idx").on(table.is_active).where(sql`is_active = true`),
   ],
 );
 
@@ -149,7 +151,8 @@ export const orderItems = pgTable(
   },
   (table) => [
     index("order_items_order_id_idx").on(table.orderId),
-
+    index("order_items_status_order_id_idx").on(table.status, table.orderId),
+    index("order_items_item_id_idx").on(table.itemId),
     index("order_items_status_idx").on(table.status),
   ],
 );
