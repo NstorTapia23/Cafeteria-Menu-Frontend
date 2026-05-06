@@ -1,4 +1,5 @@
-  import { CreateNewOrder } from "@/repositories/orders";
+ "use server"
+ import { CreateNewOrder } from "@/repositories/orders";
   import { revalidatePath, revalidateTag } from "next/cache";
   import { CreateOrderSchema } from "@/schemas/ordersSchema";
   import { unstable_cache } from "next/cache";
