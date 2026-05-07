@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { orders, workers } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq, isNotNull } from "drizzle-orm";
 import { getWorkerById } from "./workers";
 
 export async function getOpenOrders() {
@@ -47,4 +47,18 @@ export async function CreateNewOrder(
     }
     throw new Error(`Error al crear la orden: ${message}`);
   }
+}
+
+
+export async function getClosedOrders() {
+  return await db
+    .select({
+      id: orders.id,
+      numberTable: orders.numberTable,
+      status: orders.status,
+      workerName: workers.name,
+    })
+    .from(orders)
+    .innerJoin(workers, eq(orders.workerId, workers.id))
+    .where(and(eq(orders.status, "closed"), isNotNull(orders.closedAt)))
 }

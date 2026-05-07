@@ -1,5 +1,6 @@
 "use client";
 
+import OrdersFilterForm from "@/components/OrdersFiltersForm";
 import { useAuthContext } from "@/contexts/AuthContext";
 
 export default function DashboardMetricsPage() {
@@ -11,7 +12,7 @@ export default function DashboardMetricsPage() {
 
   return (
     <div>
-      {/* Contenido real del dashboard de métricas */}
+      <OrdersFilterForm></OrdersFilterForm>
     </div>
   );
 }
