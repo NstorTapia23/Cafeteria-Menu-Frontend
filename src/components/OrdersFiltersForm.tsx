@@ -104,7 +104,6 @@ export default function OrdersFilterForm() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-8 p-4 md:p-6">
-      {/* FORMULARIO */}
       <Card className="border border-zinc-200 bg-white/95 shadow-sm shadow-zinc-200/50 backdrop-blur-sm">
         <CardHeader className="border-b border-zinc-100 pb-4">
           <CardTitle className="flex items-center gap-2 text-2xl font-semibold tracking-tight text-zinc-900">
@@ -118,7 +117,6 @@ export default function OrdersFilterForm() {
             onSubmit={handleSubmit(onSubmit)}
             className="space-y-5"
           >
-            {/* FECHAS */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label
@@ -167,7 +165,6 @@ export default function OrdersFilterForm() {
               </div>
             </div>
 
-            {/* ESTADO */}
             <div className="w-full space-y-2 sm:w-56">
               <Label
                 htmlFor="status"
@@ -203,7 +200,6 @@ export default function OrdersFilterForm() {
               />
             </div>
 
-            {/* BOTÓN */}
             <Button
               type="submit"
               disabled={loading}
@@ -225,7 +221,6 @@ export default function OrdersFilterForm() {
         </CardContent>
       </Card>
 
-      {/* LOADING */}
       {loading && (
         <div className="flex items-center justify-center gap-2 text-sm text-zinc-700">
           <Loader2 className="h-4 w-4 animate-spin" />
@@ -233,7 +228,6 @@ export default function OrdersFilterForm() {
         </div>
       )}
 
-      {/* RESULTADOS */}
       {!loading && results.length > 0 && (
         <Card className="border border-zinc-200 bg-white/95 shadow-sm shadow-zinc-200/50 backdrop-blur-sm">
           <CardHeader className="border-b border-zinc-100 pb-3">
@@ -318,7 +312,6 @@ export default function OrdersFilterForm() {
         </Card>
       )}
 
-      {/* SIN RESULTADOS */}
       {!loading && results.length === 0 && (
         <div className="rounded-xl border border-zinc-200 bg-white p-4 text-center text-sm text-zinc-600 shadow-sm">
           No se encontraron órdenes para este período.

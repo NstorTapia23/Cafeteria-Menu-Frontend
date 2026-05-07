@@ -1,4 +1,3 @@
-// app/page.tsx
 import { getAllItems } from "@/repositories/items";
 import MenuClient from "@/components/menu/MenuClient";
 import { getActiveItemCategories } from "@/repositories/categories";
