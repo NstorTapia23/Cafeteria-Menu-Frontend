@@ -1,29 +1,29 @@
  "use server"
  import { CreateNewOrder } from "@/repositories/orders";
   import { revalidatePath, revalidateTag } from "next/cache";
-  import { CreateOrderSchema } from "@/schemas/ordersSchema";
+  import { CreateOrderSchema , CreateOrderInput} from "@/schemas/ordersSchema";
   import { unstable_cache } from "next/cache";
-  import { getOpenOrders } from "@/repositories/orders";
+  import { getOpenOrders  } from "@/repositories/orders";
 
-  export async function createOrder(formData: FormData) {
-    const numberTable = parseInt(formData.get("numberTable") as string);
-    const workerId = parseInt(formData.get("workerId") as string);
-
-    const validated = CreateOrderSchema.safeParse({ numberTable, workerId });
-    if (!validated.success) {
-      return { success: false, error: "Datos inválidos" };
-    }
-
-    try {
-      await CreateNewOrder(validated.data.workerId, validated.data.numberTable);
-      revalidateTag("orders" , "default")
-      revalidatePath("/admin/workspace/orders");
-      return { success: true };
-    } catch (error) {
-      console.error("Error al crear orden:", error);
-      return { success: false, error: "Error del servidor" };
-    }
+export async function createOrderAction(data: CreateOrderInput) {
+  const validated = CreateOrderSchema.safeParse(data);
+  if (!validated.success) {
+    return { success: false, error: "Datos inválidos" };
   }
+
+  try {
+    await CreateNewOrder(validated.data);
+    revalidateTag("orders" , "default");
+    revalidatePath("/admin/workspace/orders");
+    return { success: true };
+  } catch (error) {
+    console.error("Error al crear orden:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Error del servidor",
+    };
+  }
+}
 
 
   export const getOpenOrdersActions = unstable_cache(

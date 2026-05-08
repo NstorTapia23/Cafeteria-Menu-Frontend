@@ -2,7 +2,8 @@ import { db } from "@/db";
 import { orders, workers } from "@/db/schema";
 import { and, eq, isNotNull } from "drizzle-orm";
 import { getWorkerById } from "./workers";
-
+import z from "zod"
+import { CreateOrderSchema } from "@/schemas/ordersSchema";
 export async function getOpenOrders() {
   const openOrders = await db
     .select({
@@ -18,17 +19,9 @@ export async function getOpenOrders() {
   return openOrders;
 }
 
-export async function CreateNewOrder(
-  workerID: number,
-  numberTableSend: number,
-) {
-  if (!Number.isInteger(workerID) || workerID <= 0) {
-    throw new Error("ID de trabajador inválido");
-  }
-  if (!Number.isInteger(numberTableSend) || numberTableSend <= 0) {
-    throw new Error("Número de mesa inválido");
-  }
-  const worker = await getWorkerById(workerID);
+export async function CreateNewOrder({workerId , numberTable} : z.infer<typeof CreateOrderSchema>)
+ {
+  const worker = await getWorkerById(workerId);
   if (!worker) {
     throw new Error("Trabajador no encontrado");
   }
@@ -36,20 +29,13 @@ export async function CreateNewOrder(
   try {
     return await db
       .insert(orders)
-      .values({ workerId: workerID, numberTable: numberTableSend })
+      .values({ workerId: workerId, numberTable: numberTable })
       .returning();
-  } catch (error) {
-    let message = "Error desconocido";
-    if (error instanceof Error) {
-      message = error.message;
-    } else if (typeof error === "string") {
-      message = error;
-    }
-    throw new Error(`Error al crear la orden: ${message}`);
+   } catch (error) {
+    throw new Error(`Error al crear la orden: ${error}`, { cause: error });
   }
 }
-
-
+ 
 export async function getClosedOrders() {
   return await db
     .select({

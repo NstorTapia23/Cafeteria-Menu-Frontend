@@ -3,7 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { createOrder } from "@/app/admin/workspace/orders/actions";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { CreateOrderSchema, type CreateOrderInput } from "@/schemas/ordersSchema";
+import { createOrderAction } from "@/app/admin/workspace/orders/actions"; 
 
 interface NewOrderFormProps {
   workerId: number;
@@ -12,36 +15,40 @@ interface NewOrderFormProps {
 
 export function NewOrderForm({ workerId, onSuccess }: NewOrderFormProps) {
   const router = useRouter();
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [numberTable, setNumberTable] = useState("");
+  const [serverError, setServerError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsPending(true);
-    setError(null);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    reset,
+  } = useForm<CreateOrderInput>({
+    resolver: zodResolver(CreateOrderSchema),
+    defaultValues: {
+      numberTable: undefined,
+      workerId, 
+    },
+  });
 
-    const formData = new FormData();
-    formData.append("numberTable", numberTable);
-    formData.append("workerId", workerId.toString());
+  const onSubmit = async (data: CreateOrderInput) => {
+    setServerError(null);
 
-    const result = await createOrder(formData);
+    const result = await createOrderAction(data);
 
     if (result.success) {
-      setNumberTable("");
+      reset({ numberTable: undefined, workerId });
       onSuccess?.();
-      router.refresh(); 
+      router.refresh();
     } else {
-      setError(result.error || "Error al crear la orden");
+      setServerError(result.error || "Error al crear la orden");
     }
-    setIsPending(false);
   };
 
   return (
     <div className="max-w-md mx-auto bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
       <h2 className="text-xl font-semibold mb-6">Nueva Orden</h2>
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit(onSubmit)}>
         <div className="mb-4">
           <label
             htmlFor="numberTable"
@@ -52,37 +59,38 @@ export function NewOrderForm({ workerId, onSuccess }: NewOrderFormProps) {
           <input
             type="number"
             id="numberTable"
-            name="numberTable"
             min="1"
             max="20"
-            required
-            value={numberTable}
-            onChange={(e) => setNumberTable(e.target.value)}
             className={cn(
               "w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2",
-              error
+              errors.numberTable
                 ? "border-red-300 focus:ring-red-500"
                 : "border-gray-300 focus:ring-blue-500",
             )}
-            disabled={isPending}
+            {...register("numberTable", { valueAsNumber: true })}
+            disabled={isSubmitting}
           />
+          {errors.numberTable && (
+            <p className="mt-1 text-sm text-red-600">
+              {errors.numberTable.message}
+            </p>
+          )}
         </div>
-        
-        <input type="hidden" name="workerId" value={workerId} />
-
-        {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+        {serverError && (
+          <p className="mb-4 text-sm text-red-600">{serverError}</p>
+        )}
 
         <button
           type="submit"
-          disabled={isPending}
+          disabled={isSubmitting}
           className={cn(
             "w-full py-2 px-4 rounded-md text-white font-medium transition-colors",
-            isPending
+            isSubmitting
               ? "bg-blue-400 cursor-not-allowed"
               : "bg-blue-600 hover:bg-blue-700",
           )}
         >
-          {isPending ? "Creando..." : "Crear Orden"}
+          {isSubmitting ? "Creando..." : "Crear Orden"}
         </button>
       </form>
     </div>

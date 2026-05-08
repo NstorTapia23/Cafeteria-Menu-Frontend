@@ -187,7 +187,7 @@ export async function createManyOrderItems(
     const insertValues = normalized.map(({ itemId, quantity }) => {
       const price = priceMap.get(itemId);
       if (!price) {
-        throw new Error(`No active price for item ${itemId}`);
+        throw new Error(`El elemento ${itemId} no tiene precio activo`);
       }
 
       return {
@@ -215,7 +215,7 @@ export async function createManyOrderItems(
       const price = priceMap.get(row.itemId);
 
       if (!item || !price) {
-        throw new Error(`Inconsistent data for item ${row.itemId}`);
+        throw new Error(`Error en los precios del elemento ${row.itemId}`);
       }
 
       return {

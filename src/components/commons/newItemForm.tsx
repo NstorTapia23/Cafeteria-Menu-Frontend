@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -43,8 +43,7 @@ export default function CreateItemPage({
   const {
     register,
     handleSubmit,
-    setValue,
-    watch,
+    control,
     reset,
     formState: { errors, isSubmitting },
   } = useForm<CreateItemInput>({
@@ -52,15 +51,12 @@ export default function CreateItemPage({
     defaultValues: {
       name: "",
       description: "",
-      itemCategory: undefined as unknown as number,
+      itemCategory: 0,
       price: 0,
       elaborationArea: "cocina",
       url: null,
     },
   });
-
-  const elaborationArea = watch("elaborationArea");
-  const itemCategory = watch("itemCategory");
 
   async function onSubmit(values: CreateItemInput) {
     try {
@@ -84,7 +80,7 @@ export default function CreateItemPage({
       reset({
         name: "",
         description: "",
-        itemCategory: undefined as unknown as number,
+        itemCategory: 0,
         price: 0,
         elaborationArea: "cocina",
         url: null,
@@ -109,6 +105,7 @@ export default function CreateItemPage({
     >
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
         <div className="space-y-6">
+          {/* Nombre */}
           <div className="space-y-2">
             <Label htmlFor="name">Nombre</Label>
             <Input
@@ -125,6 +122,7 @@ export default function CreateItemPage({
             </p>
           </div>
 
+          {/* Descripción */}
           <div className="space-y-2">
             <Label htmlFor="description">Descripción (opcional)</Label>
             <Textarea
@@ -140,28 +138,30 @@ export default function CreateItemPage({
             )}
           </div>
 
+          {/* Categoría */}
           <div className="space-y-2">
             <Label htmlFor="itemCategory">Categoría</Label>
-            <Select
-              value={itemCategory ? String(itemCategory) : ""}
-              onValueChange={(value) =>
-                setValue("itemCategory", Number(value), {
-                  shouldValidate: true,
-                  shouldDirty: true,
-                })
-              }
-            >
-              <SelectTrigger id="itemCategory" className="w-full">
-                <SelectValue placeholder="Selecciona una categoría" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((category) => (
-                  <SelectItem key={category.id} value={String(category.id)}>
-                    {category.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Controller
+              name="itemCategory"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  value={field.value !== 0 ? String(field.value) : ""}
+                  onValueChange={(value) => field.onChange(Number(value))}
+                >
+                  <SelectTrigger id="itemCategory" className="w-full">
+                    <SelectValue placeholder="Selecciona una categoría" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={String(category.id)}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
             {errors.itemCategory && (
               <p className="text-sm text-destructive">
                 {errors.itemCategory.message}
@@ -172,6 +172,7 @@ export default function CreateItemPage({
             </p>
           </div>
 
+          {/* Precio */}
           <div className="space-y-2">
             <Label htmlFor="price">Precio</Label>
             <Input
@@ -189,26 +190,30 @@ export default function CreateItemPage({
             <p className="text-sm text-muted-foreground">Precio (ej: 10.99)</p>
           </div>
 
+          {/* Área de elaboración */}
           <div className="space-y-2">
             <Label htmlFor="elaborationArea">Área de elaboración</Label>
-            <Select
-              value={elaborationArea}
-              onValueChange={(value) =>
-                setValue("elaborationArea", value as "cocina" | "bar" | "lunch", {
-                  shouldValidate: true,
-                  shouldDirty: true,
-                })
-              }
-            >
-              <SelectTrigger id="elaborationArea" className="w-full">
-                <SelectValue placeholder="Selecciona un área" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="cocina">Cocina</SelectItem>
-                <SelectItem value="bar">Bar</SelectItem>
-                <SelectItem value="lunch">Lunch</SelectItem>
-              </SelectContent>
-            </Select>
+            <Controller
+              name="elaborationArea"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  value={field.value}
+                  onValueChange={(value) =>
+                    field.onChange(value as "cocina" | "bar" | "lunch")
+                  }
+                >
+                  <SelectTrigger id="elaborationArea" className="w-full">
+                    <SelectValue placeholder="Selecciona un área" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cocina">Cocina</SelectItem>
+                    <SelectItem value="bar">Bar</SelectItem>
+                    <SelectItem value="lunch">Lunch</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
             {errors.elaborationArea && (
               <p className="text-sm text-destructive">
                 {errors.elaborationArea.message}
@@ -219,6 +224,7 @@ export default function CreateItemPage({
             </p>
           </div>
 
+          {/* Imagen */}
           <div className="space-y-2">
             <Label htmlFor="image">Imagen del item</Label>
             <Input
@@ -240,6 +246,7 @@ export default function CreateItemPage({
         </div>
       </div>
 
+      {/* Botones */}
       <div className="sticky bottom-0 border-t bg-background px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6">
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <Button
