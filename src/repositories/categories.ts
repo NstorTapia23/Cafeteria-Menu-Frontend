@@ -18,7 +18,6 @@ async function getActiveItemCategoriesQuery() {
 
 export const getActiveItemCategories = unstable_cache(
   async () => {
-    console.log("Hola desde la cache")
     return await getActiveItemCategoriesQuery();
   },
   ["active-item-categories"],

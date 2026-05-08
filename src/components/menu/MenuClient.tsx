@@ -46,9 +46,13 @@ export default function MenuClient({
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background">
+      <div
+        className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: "url('/islazul.webp')" }}
+      />
+
+
       <div className="relative z-10 flex flex-col items-center pt-10 pb-6">
-        
-        {/* Logo con parallax */}
         <div
           className="transition-transform duration-300 ease-out will-change-transform"
           style={{
@@ -69,7 +73,6 @@ export default function MenuClient({
           </div>
         </div>
 
-        {/* Header */}
         <Card className="mt-6 border-none bg-white/70 backdrop-blur-md shadow-lg">
           <CardContent className="px-6 py-4 text-center">
             <h1 className="text-2xl font-bold tracking-tight">
@@ -81,10 +84,8 @@ export default function MenuClient({
           </CardContent>
         </Card>
 
-        {/* Filtros */}
         <div className="mt-8 w-full max-w-4xl px-4">
           <div className="flex gap-2 overflow-x-auto pb-2">
-            
             <Button
               variant={selectedFilter === null ? "default" : "secondary"}
               className="rounded-full shrink-0"
@@ -107,8 +108,6 @@ export default function MenuClient({
             ))}
           </div>
         </div>
-
-        {/* Lista */}
         <div className="mt-8 w-full max-w-4xl grid grid-cols-1 gap-4 px-4 sm:grid-cols-2">
           {filteredItems.length > 0 ? (
             filteredItems.map((item) => (
