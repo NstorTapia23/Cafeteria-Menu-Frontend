@@ -3,7 +3,7 @@
 
 import { db } from "@/db";
 import { items, prices } from "@/db/schema";
-import { createItemCategory } from "@/repositories/categories";
+import { createItemCategory, softDeleteItemCategory } from "@/repositories/categories";
 import { SoftDeleteItem, updateItem } from "@/repositories/items";
 import {
   CreateItemInput,
@@ -231,4 +231,9 @@ export async function CreateItemCategoryAction(name: string) {
   revalidatePath("/admin/workspace/dashboard/menu");
   revalidateTag("menu-items" , "default");
   return result;
+}
+
+export async function DeleteCategoryItems(id: number){
+  revalidateTag("item-categories" , "default");
+  return await softDeleteItemCategory(id)
 }

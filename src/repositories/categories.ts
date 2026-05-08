@@ -1,6 +1,6 @@
 import { db } from "@/db";
-import { items_categories } from "@/db/schema";
-import { asc, eq } from "drizzle-orm";
+import { items, items_categories } from "@/db/schema";
+import { asc, eq , and} from "drizzle-orm";
 import { revalidateTag, unstable_cache } from "next/cache";
 
 const ITEM_CATEGORIES_TAG = "item-categories";
@@ -57,20 +57,29 @@ export async function createItemCategory(categoryName: string) {
 }
 
 export async function softDeleteItemCategory(id: number) {
-  const itemCategory = await db
-    .select({
-      id: items_categories.id,
-      isActive: items_categories.isActive,
-    })
+ const [category] = await db
+    .select()
     .from(items_categories)
     .where(eq(items_categories.id, id));
 
-  if (itemCategory.length === 0) {
-    throw new Error("Categoría no encontrada");
-  }
+  if (!category) throw new Error("Categoría no encontrada");
+  if (!category.isActive) throw new Error("La categoría ya está inactiva");
 
-  if (!itemCategory[0].isActive) {
-    throw new Error("La categoría ya está inactiva");
+  const activeItems = await db
+    .select()
+    .from(items)
+    .where(
+      and(
+        eq(items.categoryId, id),
+        eq(items.is_active, true)
+      )
+    )
+    .limit(1); 
+
+  if (activeItems.length > 0) {
+    throw new Error(
+      "No se puede desactivar la categoría porque tiene ítems activos. Desactiva o reasigna esos ítems primero."
+    );
   }
 
   const result = await db
@@ -78,8 +87,5 @@ export async function softDeleteItemCategory(id: number) {
     .set({ isActive: false })
     .where(eq(items_categories.id, id))
     .returning();
-
-  revalidateTag(ITEM_CATEGORIES_TAG , "default");
-
   return result;
 }

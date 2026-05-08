@@ -6,7 +6,6 @@ import {
   updateItemWithImageAction,
   DeleteItemAction,
 } from "@/app/admin/workspace/dashboard/menu/actions";
-
 import CreateItemPage, {
   ItemCategoryType,
 } from "@/components/commons/newItemForm";
@@ -16,7 +15,7 @@ import {
   MenuItemCard,
   type MenuInfoType,
 } from "@/components/commons/Menu-Item-Card";
-
+import { CategoryList } from "./CategoryList";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -25,8 +24,10 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-
+import { DeleteCategoryItems } from "@/app/admin/workspace/dashboard/menu/actions";
 import { useAuthContext } from "@/contexts/AuthContext";
+
+
 
 export default function MenuDashboardClient({
   initialItems,
@@ -38,6 +39,7 @@ export default function MenuDashboardClient({
   const { isAuthenticated, user } = useAuthContext();
 
   const [itemsMenu, setItemsMenu] = useState<MenuInfoType[]>(initialItems);
+   const [categories, setCategories] = useState<ItemCategoryType[]>(itemCategories);
   const [createOpen, setCreateOpen] = useState(false);
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -52,7 +54,11 @@ export default function MenuDashboardClient({
     setEditError(null);
     setEditOpen(true);
   };
-
+const handleDeleteCategory = async (id: number) => {
+    await DeleteCategoryItems(id);
+    setCategories(prev => prev.filter(cat => cat.id !== id));
+    setItemsMenu(prev => prev.filter(item => item.categoryId !== id));
+  };
   const handleUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!selectedItem) return;
@@ -135,11 +141,16 @@ export default function MenuDashboardClient({
 
             <div className="flex min-h-0 flex-1 flex-col p-4">
               <CreateCategory onSuccess={() => setCategoryOpen(false)} />
+                <div className="mt-6">
+        <h3 className="mb-2 text-lg font-semibold">Categorías actuales</h3>
+        <CategoryList categories={categories} onDelete={handleDeleteCategory} />
+      </div>
+      
             </div>
           </SheetContent>
         </Sheet>
       </div>
-
+   
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {itemsMenu.map((item) => (
           <MenuItemCard key={item.id} item={item} onClick={handleOpenEdit} />
