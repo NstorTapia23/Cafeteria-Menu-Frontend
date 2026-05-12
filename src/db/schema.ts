@@ -106,7 +106,7 @@ export const orders = pgTable(
   },
   (table) => [
     index("orders_status_idx").on(table.status),
-    index("orders_created_date_idx").on(sql`(created_at::date)`),
+    index("created_date_idx").on(table.createdAt),
     index("orders_worker_id_idx").on(table.workerId),
   ],
 );
