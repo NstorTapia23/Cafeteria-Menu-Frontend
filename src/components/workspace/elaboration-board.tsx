@@ -16,11 +16,13 @@ type Props = {
 };
 
 export function ElaborationBoard({ area, title }: Props) {
-  const { data, loading, error, refetch } = useElaborationItems(area);
+  const { data, loading, error } = useElaborationItems(area);
   const [busyId, setBusyId] = useState<number | null>(null);
+  const [hiddenIds, setHiddenIds] = useState<Set<number>>(new Set());
 
   const handleMarkCooked = async (itemId: number, orderId: number) => {
     setBusyId(itemId);
+    setHiddenIds((prev) => new Set(prev).add(itemId));
 
     try {
       const formData = new FormData();
@@ -31,14 +33,20 @@ export function ElaborationBoard({ area, title }: Props) {
       await updateStatus(formData);
 
       toast.success("Ítem marcado como cocinado");
-      await refetch();
     } catch (err) {
+      setHiddenIds((prev) => {
+        const next = new Set(prev);
+        next.delete(itemId);
+        return next;
+      });
       toast.error("No se pudo actualizar el estado");
       console.error(err);
     } finally {
       setBusyId(null);
     }
   };
+
+  const visibleData = data.filter((item) => !hiddenIds.has(item.id));
 
   return (
     <section className="mx-auto w-full max-w-5xl p-4">
@@ -54,14 +62,14 @@ export function ElaborationBoard({ area, title }: Props) {
 
           {error && <p className="text-sm text-destructive">{error}</p>}
 
-          {!loading && data.length === 0 && (
+          {!loading && visibleData.length === 0 && (
             <p className="text-sm text-muted-foreground">
               No hay pedidos pendientes en esta área.
             </p>
           )}
 
           <div className="grid gap-3">
-            {data.map((row) => (
+            {visibleData.map((row) => (
               <div
                 key={row.id}
                 className="flex flex-col gap-3 rounded-lg border p-4 md:flex-row md:items-center md:justify-between"

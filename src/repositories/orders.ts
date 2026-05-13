@@ -4,6 +4,7 @@ import { and, eq, isNotNull } from "drizzle-orm";
 import { getWorkerById } from "./workers";
 import z from "zod"
 import { CreateOrderSchema } from "@/schemas/ordersSchema";
+
 export async function getOpenOrders() {
   const openOrders = await db
     .select({
