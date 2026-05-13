@@ -85,11 +85,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const checkAuth = useCallback(async () => {
     try {
-      const currentUser = await fetchCurrentUser();
+      const response = await fetch("/api/auth/me", {
+        method: "GET",
+        cache: "no-store",
+        credentials: "include",
+      });
+
+      const data: MeResponse = await response.json();
+
+      if (!response.ok || !data.user?.id) {
+        return {
+          success: false,
+          user: null,
+        };
+      }
 
       return {
-        success: Boolean(currentUser),
-        user: currentUser,
+        success: Boolean(data.user),
+        user: data.user,
       };
     } catch {
       return {
@@ -98,7 +111,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         error: "Error de conexión",
       };
     }
-  }, [fetchCurrentUser]);
+  }, []);
 
   useEffect(() => {
     if (hasBootstrapped.current) return;
@@ -111,11 +124,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setError(null);
 
       try {
-        const result = await checkAuth();
+        const response = await fetch("/api/auth/me", {
+          method: "GET",
+          cache: "no-store",
+          credentials: "include",
+        });
+
+        const data: MeResponse = await response.json();
 
         if (!cancelled) {
-          setUser(result.user);
-          setError(result.error ?? null);
+          if (!response.ok || !data.user?.id) {
+            setUser(null);
+          } else {
+            setUser(data.user);
+          }
+          setError(null);
         }
       } catch {
         if (!cancelled) {
@@ -134,7 +157,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return () => {
       cancelled = true;
     };
-  }, [checkAuth]);
+  }, []);
 
   const login = useCallback(async (name: string, password: string) => {
     setLoading(true);
@@ -172,41 +195,44 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, []);
 
-  const register = useCallback(async (name: string, password: string, role: Role) => {
-    setLoading(true);
-    setError(null);
+  const register = useCallback(
+    async (name: string, password: string, role: Role) => {
+      setLoading(true);
+      setError(null);
 
-    try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({ name, password, role }),
-      });
+      try {
+        const response = await fetch("/api/auth/register", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({ name, password, role }),
+        });
 
-      const data: AuthMutationResponse = await response.json();
+        const data: AuthMutationResponse = await response.json();
 
-      if (!response.ok || !data.worker?.id) {
-        const msg = data.error || "Error en registro";
+        if (!response.ok || !data.worker?.id) {
+          const msg = data.error || "Error en registro";
+          setUser(null);
+          setError(msg);
+          return { success: false, error: msg };
+        }
+
+        setUser(data.worker);
+        setError(null);
+        return { success: true, user: data.worker };
+      } catch {
+        const msg = "Error de conexión";
         setUser(null);
         setError(msg);
         return { success: false, error: msg };
+      } finally {
+        setLoading(false);
       }
-
-      setUser(data.worker);
-      setError(null);
-      return { success: true, user: data.worker };
-    } catch {
-      const msg = "Error de conexión";
-      setUser(null);
-      setError(msg);
-      return { success: false, error: msg };
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    },
+    [],
+  );
 
   const logout = useCallback(async () => {
     setLoading(true);

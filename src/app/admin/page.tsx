@@ -1,11 +1,7 @@
-"use client";
-
-import LoginPage from "@/components/LoginPage";
-
-export default function Login() {
+export default function AdminPage() {
   return (
     <div>
-      <LoginPage></LoginPage>
+      <h1>Admin Page</h1>
     </div>
   );
 }

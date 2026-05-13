@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/db";
 import { workers } from "@/db/schema";
@@ -9,10 +9,10 @@ import { UserRole } from "@/types/roles";
 const registerSchema = z.object({
   name: z.string().min(3).max(255),
   password: z.string().min(6).max(255),
-  role: z.nativeEnum(UserRole),
+  role: z.enum(UserRole),
 });
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const parsed = registerSchema.safeParse(body);
