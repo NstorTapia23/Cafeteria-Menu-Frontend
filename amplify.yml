@@ -6,7 +6,7 @@ frontend:
                 - corepack enable
                 - corepack prepare pnpm@latest --activate
                 - pnpm install --no-frozen-lockfile
-                - pnpm approve-builds
+                - pnpm approve-builds -y
         build:
             commands:
                 - pnpm run build
