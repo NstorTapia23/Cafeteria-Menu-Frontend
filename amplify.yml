@@ -4,9 +4,9 @@ frontend:
         preBuild:
             commands:
                 - corepack enable
-                - corepack prepare pnpm@latest --activate
+                - corepack prepare pnpm@9.15.0 --activate
+                - pnpm config set ignore-scripts false
                 - pnpm install --no-frozen-lockfile
-                - pnpm approve-builds -y
         build:
             commands:
                 - pnpm run build
