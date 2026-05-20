@@ -1,8 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import  React from "react";
-
+import React from "react";
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { OrdersCard } from "./commons/ordersCards";
 import { NewOrderForm } from "./commons/newOrdersForm";
@@ -13,95 +20,87 @@ interface OrderCardData {
   numberTable: number;
   status: "open" | "closed" | "canceled";
   workerName: string;
-  items?: string[];
 }
 
 interface OrdersAndPendsClientProps {
   ordenesIniciales: OrderCardData[];
 }
 
-type TabType = "ordenes" | "nueva";
-
 export default function OrdersAndPendsClient({
   ordenesIniciales,
 }: OrdersAndPendsClientProps) {
-  const [activeTab, setActiveTab] = useState<TabType>("ordenes");
+  const [isFormOpen, setIsFormOpen] = useState(false);
   const { user } = useAuth();
 
+  const canCreateOrder = Boolean(user?.id);
+
   return (
-    <main className="min-h-screen bg-gray-50 p-6">
-      <nav className="flex gap-2 border-b border-gray-200 pb-3">
-        <TabButton
-          active={activeTab === "ordenes"}
-          onClick={() => setActiveTab("ordenes")}
-        >
-          Órdenes
-        </TabButton>
+    <main className="min-h-screen bg-gray-50 p-4 sm:p-6">
+      <header className="flex flex-col gap-3 mb-6 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-2xl font-bold text-gray-800">Órdenes</h1>
 
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            onClick={() => setIsFormOpen(true)}
+            disabled={!canCreateOrder}
+            className={cn("gap-2", !canCreateOrder && "cursor-not-allowed opacity-70")}
+            title={
+              !canCreateOrder
+                ? "Inicia sesión para crear una orden"
+                : "Crear nueva orden"
+            }
+          >
+            <Plus className="h-4 w-4" />
+            Nueva Orden
+          </Button>
 
-        <TabButton
-          active={activeTab === "nueva"}
-          onClick={() => setActiveTab("nueva")}
-        >
-          Nueva Orden
-        </TabButton>
-      </nav>
+          {!canCreateOrder && (
+            <p className="text-xs sm:text-sm text-gray-500">
+              Inicia sesión para crear una orden
+            </p>
+          )}
+        </div>
+      </header>
 
-      <section className="mt-6">
-        {activeTab === "ordenes" && (
-          <OrdersSection ordenes={ordenesIniciales} />
-        )}
+      <OrdersSection ordenes={ordenesIniciales} />
 
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Nueva Orden</DialogTitle>
+          </DialogHeader>
 
-        {activeTab === "nueva" && user?.id && (
-          <NewOrderForm
-            workerId={Number(user.id)}
-            onSuccess={() => setActiveTab("ordenes")}
-          />
-        )}
-
-        {activeTab === "nueva" && !user?.id && (
-          <p className="text-center text-gray-500">
-            Debes iniciar sesión para crear una orden.
-          </p>
-        )}
-      </section>
+          {canCreateOrder && (
+            <NewOrderForm
+              workerId={Number(user!.id)}
+              onSuccess={() => setIsFormOpen(false)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }
-const OrdersSection = React.memo(function OrdersSection({ ordenes }: { ordenes: OrderCardData[] }) {
+
+const OrdersSection = React.memo(function OrdersSection({
+  ordenes,
+}: {
+  ordenes: OrderCardData[];
+}) {
   if (!ordenes.length) {
-    return <p className="text-center text-gray-500">No hay órdenes disponibles.</p>;
+    return (
+      <p className="text-center text-gray-500 py-12">
+        No hay órdenes disponibles.
+      </p>
+    );
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {ordenes.map((orden) => (
-        <OrdersCard key={orden.id} data={orden} type="orden" />
-      ))}
+    <div className="grid gap-4 sm:gap-5 md:grid-cols-2 lg:grid-cols-3">
+      {ordenes.map((orden) => {
+        const { ...dataWithoutItems } = orden as OrderCardData & { items?: string[] };
+        return <OrdersCard key={orden.id} data={dataWithoutItems} type="orden" />;
+      })}
     </div>
-  );
-});
-
-interface TabButtonProps {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}
-
-
-const TabButton = React.memo(function TabButton({ active, onClick, children }: TabButtonProps) {
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        "rounded-md px-6 py-2 text-sm font-medium transition-colors",
-        active
-          ? "bg-blue-600 text-white shadow-sm hover:bg-blue-700"
-          : "text-gray-600 hover:bg-gray-100 hover:text-gray-900",
-      )}
-    >
-      {children}
-    </button>
   );
 });

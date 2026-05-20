@@ -16,7 +16,7 @@ export async function getOpenOrders() {
     .from(orders)
     .innerJoin(workers, eq(orders.workerId, workers.id))
     .where(eq(orders.status, "open"));
-
+    
   return openOrders;
 }
 
