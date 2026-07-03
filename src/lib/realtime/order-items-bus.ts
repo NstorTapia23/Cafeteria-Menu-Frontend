@@ -1,5 +1,6 @@
-import { supabase } from "@/lib/supabase";
 import type { ElaborationArea } from "@/schemas/orderItemsSchemas";
+import { supabase } from "../supabase";
+
 export type OrderItemsRealtimeEvent =
   | {
       type: "items-batch-created";
@@ -28,7 +29,8 @@ export type OrderItemsRealtimeEvent =
       area: ElaborationArea;
     }
   | { type: "order-closed"; orderId: number };
-  
+
+// Esta función se puede eliminar o conservar para usarla desde el cliente
 export async function publishOrderItemsEvent(event: OrderItemsRealtimeEvent) {
   try {
     await supabase.channel("order-items").send({

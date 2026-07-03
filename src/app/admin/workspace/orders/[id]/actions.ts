@@ -56,12 +56,6 @@ async function updateStatusInternal(
   const validated = updateOrderItemStatusSchema.parse({ id, status });
   await updateOrderItemStatus(validated);
 
-  await publishOrderItemsEvent({
-    type: "item-updated",
-    orderId: context.orderId,
-    itemId: context.itemId,
-    area: context.area,
-  });
 
   revalidatePath(`/admin/workspace/orders/${orderId}`);
   return await getOrderItemsByOrderId(orderId);

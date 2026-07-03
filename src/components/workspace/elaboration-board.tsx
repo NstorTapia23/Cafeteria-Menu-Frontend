@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useElaborationItems } from "@/hooks/use-elaboration-items";
 import { updateStatus } from "@/app/admin/workspace/orders/[id]/actions";
+import { supabase } from "@/lib/supabase";
+import type { OrderItemsRealtimeEvent } from "@/lib/realtime/order-items-bus";
 
 type ElaborationArea = "bar" | "cocina" | "lunch";
 
@@ -18,27 +20,32 @@ type Props = {
 export function ElaborationBoard({ area, title }: Props) {
   const { data, loading, error } = useElaborationItems(area);
   const [busyId, setBusyId] = useState<number | null>(null);
-  const [hiddenIds, setHiddenIds] = useState<Set<number>>(new Set());
 
   const handleMarkCooked = async (itemId: number, orderId: number) => {
     setBusyId(itemId);
-    setHiddenIds((prev) => new Set(prev).add(itemId));
-
     try {
       const formData = new FormData();
       formData.append("id", itemId.toString());
       formData.append("status", "cooked");
       formData.append("orderId", orderId.toString());
+      formData.append("area", area);
 
       await updateStatus(formData);
-
       toast.success("Ítem marcado como cocinado");
-    } catch (err) {
-      setHiddenIds((prev) => {
-        const next = new Set(prev);
-        next.delete(itemId);
-        return next;
+
+      // Emitir evento en el canal específico del área
+      const event: OrderItemsRealtimeEvent = {
+        type: "item-updated",
+        orderId,
+        itemId,
+        area,
+      };
+      await supabase.channel(`order-items:${area}`).send({
+        type: "broadcast",
+        event: "order-event",
+        payload: event,
       });
+    } catch (err) {
       toast.error("No se pudo actualizar el estado");
       console.error(err);
     } finally {
@@ -46,30 +53,24 @@ export function ElaborationBoard({ area, title }: Props) {
     }
   };
 
-  const visibleData = data.filter((item) => !hiddenIds.has(item.id));
-
   return (
     <section className="mx-auto w-full max-w-5xl p-4">
       <Card>
         <CardHeader>
           <CardTitle className="text-2xl">{title}</CardTitle>
         </CardHeader>
-
         <CardContent className="space-y-4">
           {loading && (
             <p className="text-sm text-muted-foreground">Cargando pedidos...</p>
           )}
-
           {error && <p className="text-sm text-destructive">{error}</p>}
-
-          {!loading && visibleData.length === 0 && (
+          {!loading && data.length === 0 && (
             <p className="text-sm text-muted-foreground">
               No hay pedidos pendientes en esta área.
             </p>
           )}
-
           <div className="grid gap-3">
-            {visibleData.map((row) => (
+            {data.map((row) => (
               <div
                 key={row.id}
                 className="flex flex-col gap-3 rounded-lg border p-4 md:flex-row md:items-center md:justify-between"
@@ -84,7 +85,6 @@ export function ElaborationBoard({ area, title }: Props) {
                     Cantidad: {row.quantity}
                   </p>
                 </div>
-
                 <Button
                   onClick={() => handleMarkCooked(row.id, row.orderId)}
                   disabled={busyId === row.id}

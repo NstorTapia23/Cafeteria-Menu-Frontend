@@ -14,7 +14,7 @@ interface TokenPayload {
   role:
     | "admin"
     | "dependiente"
-    | "cocinero"
+    | "cocinero"  
     | "bartender"
     | "lunch";
 }
