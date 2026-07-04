@@ -7,8 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useElaborationItems } from "@/hooks/use-elaboration-items";
 import { updateStatus } from "@/app/admin/workspace/orders/[id]/actions";
-import { supabase } from "@/lib/supabase";
-import type { OrderItemsRealtimeEvent } from "@/lib/realtime/order-items-bus";
 
 type ElaborationArea = "bar" | "cocina" | "lunch";
 
@@ -32,19 +30,6 @@ export function ElaborationBoard({ area, title }: Props) {
 
       await updateStatus(formData);
       toast.success("Ítem marcado como cocinado");
-
-      // Emitir evento en el canal específico del área
-      const event: OrderItemsRealtimeEvent = {
-        type: "item-updated",
-        orderId,
-        itemId,
-        area,
-      };
-      await supabase.channel(`order-items:${area}`).send({
-        type: "broadcast",
-        event: "order-event",
-        payload: event,
-      });
     } catch (err) {
       toast.error("No se pudo actualizar el estado");
       console.error(err);

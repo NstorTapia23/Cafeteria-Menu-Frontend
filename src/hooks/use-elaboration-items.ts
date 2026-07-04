@@ -92,9 +92,10 @@ export function useElaborationItems(area: ElaborationArea) {
     void load(controller.signal);
 
     const channel = supabase
-      .channel(`order-items:${area}`)
+      .channel("order-items")
       .on("broadcast", { event: "order-event" }, (payload) => {
         const event = payload.payload as OrderItemsRealtimeEvent;
+        if (event.area && event.area !== area) return;
 
         switch (event.type) {
           case "item-updated":
